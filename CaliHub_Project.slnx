@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CaliHub_API/CaliHub_API.csproj" />
+  <Project Path="CaliHub_DAL/CaliHub_DAL.csproj" />
+  <Project Path="CaliHub_Model/CaliHub_Model.csproj" />
+  <Project Path="CaliHub_view/CaliHub_view.csproj" />
+</Solution>
