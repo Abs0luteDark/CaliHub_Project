@@ -6,20 +6,15 @@ namespace CaliHub_DAL
 {
     public static class DatabaseInitializer
     {
-        // הפעולה הראשית שמופעלת מה-API
         public static async Task InitializeAsync(string baseConnectionString)
         {
-            // 1. יצירת בסיס הנתונים (אם לא קיים)
             await CreateDatabaseAsync(baseConnectionString);
 
-            // 2. הוספת שם בסיס הנתונים למחרוזת החיבור כדי שנוכל ליצור בו טבלאות
             string connectionStringWithDb = baseConnectionString + "Database=CaliHubDB;";
 
-            // 3. יצירת הטבלאות (בסדר הנכון)
             await CreateTablesAsync(connectionStringWithDb);
-
-            // 4. אתחול טבלת התפקידים עם התפקידים ממסמך הייזום
             await SeedRolesAsync(connectionStringWithDb);
+            await SeedUsersAsync(connectionStringWithDb); // הוספנו אתחול משתמשים
         }
 
         private static async Task CreateDatabaseAsync(string connectionString)
@@ -27,7 +22,6 @@ namespace CaliHub_DAL
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
 
-            // יצירת מסד נתונים לפרויקט CaliHub
             string query = "CREATE DATABASE IF NOT EXISTS CaliHubDB;";
             using var command = new MySqlCommand(query, connection);
             await command.ExecuteNonQueryAsync();
@@ -38,7 +32,7 @@ namespace CaliHub_DAL
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
 
-            // יצירת טבלת תפקידים (חייבת להיות ראשונה כי משתמשים מצביעים עליה)
+            // 1. טבלת תפקידים
             string createRolesQuery = @"
                 CREATE TABLE IF NOT EXISTS Roles (
                     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,7 +41,7 @@ namespace CaliHub_DAL
             using var commandRoles = new MySqlCommand(createRolesQuery, connection);
             await commandRoles.ExecuteNonQueryAsync();
 
-            // יצירת טבלת משתמשים עם מפתח זר שמצביע לטבלת התפקידים
+            // 2. טבלת משתמשים - עם עמודת IsActive
             string createUsersQuery = @"
                 CREATE TABLE IF NOT EXISTS Users (
                     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,6 +49,7 @@ namespace CaliHub_DAL
                     Email VARCHAR(100) NOT NULL UNIQUE,
                     PasswordHash VARCHAR(255) NOT NULL,
                     RoleId INT NOT NULL,
+                    IsActive BOOLEAN NOT NULL DEFAULT TRUE,
                     FOREIGN KEY (RoleId) REFERENCES Roles(Id)
                 );";
             using var commandUsers = new MySqlCommand(createUsersQuery, connection);
@@ -66,19 +61,48 @@ namespace CaliHub_DAL
             using var connection = new MySqlConnection(connectionString);
             await connection.OpenAsync();
 
-            // בדיקה האם טבלת התפקידים ריקה (כדי שהקוד לא יוסיף כפילויות בכל הרצה)
             string checkQuery = "SELECT COUNT(*) FROM Roles;";
             using var checkCommand = new MySqlCommand(checkQuery, connection);
             long count = Convert.ToInt64(await checkCommand.ExecuteScalarAsync());
 
-            // אם הטבלה ריקה, נכניס את התפקידים המוגדרים במסמך הייזום
             if (count == 0)
             {
+                // Id=1: Trainee, Id=2: Trainer, Id=3: SuperAdmin
                 string insertQuery = @"
                     INSERT INTO Roles (RoleName) VALUES 
                     ('Trainee'), 
                     ('Trainer'), 
                     ('SuperAdmin');";
+                using var insertCommand = new MySqlCommand(insertQuery, connection);
+                await insertCommand.ExecuteNonQueryAsync();
+            }
+        }
+
+        private static async Task SeedUsersAsync(string connectionString)
+        {
+            using var connection = new MySqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            string checkQuery = "SELECT COUNT(*) FROM Users;";
+            using var checkCommand = new MySqlCommand(checkQuery, connection);
+            long count = Convert.ToInt64(await checkCommand.ExecuteScalarAsync());
+
+            // אם הטבלה ריקה, נכניס 10 משתמשי בדיקה (1 מנהל, 2 מאמנים, 7 מתאמנים)
+            if (count == 0)
+            {
+                string insertQuery = @"
+                    INSERT INTO Users (Username, Email, PasswordHash, RoleId, IsActive) VALUES 
+                    ('admin', 'admin@calihub.com', '123456', 3, TRUE),
+                    ('trainer_dan', 'dan@calihub.com', '123456', 2, TRUE),
+                    ('trainer_alex', 'alex@calihub.com', '123456', 2, TRUE),
+                    ('user_ron', 'ron@calihub.com', '123456', 1, TRUE),
+                    ('user_noam', 'noam@calihub.com', '123456', 1, TRUE),
+                    ('user_maya', 'maya@calihub.com', '123456', 1, TRUE),
+                    ('user_tom', 'tom@calihub.com', '123456', 1, TRUE),
+                    ('user_gal', 'gal@calihub.com', '123456', 1, TRUE),
+                    ('user_eli', 'eli@calihub.com', '123456', 1, TRUE),
+                    ('user_or', 'or@calihub.com', '123456', 1, FALSE);"; // משתמש אחד לא פעיל לצורכי בדיקה
+
                 using var insertCommand = new MySqlCommand(insertQuery, connection);
                 await insertCommand.ExecuteNonQueryAsync();
             }

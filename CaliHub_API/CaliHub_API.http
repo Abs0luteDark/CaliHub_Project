@@ -1,6 +1,68 @@
-@CaliHub_API_HostAddress = http://localhost:5009
+@CaliHub_API_HostAddress = https://localhost:7030
 
-GET {{CaliHub_API_HostAddress}}/weatherforecast/
+### 1. שליפת כל המשתמשים
+GET {{CaliHub_API_HostAddress}}/api/users
 Accept: application/json
 
 ###
+
+### 2. שליפת משתמש לפי מזהה (ID = 1)
+GET {{CaliHub_API_HostAddress}}/api/users/1
+Accept: application/json
+
+###
+
+### 3. ספירת משתמשים לפי תפקיד
+GET {{CaliHub_API_HostAddress}}/api/users/count-by-role
+Accept: application/json
+
+###
+
+### 4. בדיקת התחברות (Login)
+POST {{CaliHub_API_HostAddress}}/api/users/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "123456"
+}
+
+###
+
+### 5. הוספת משתמש בדיקה חדש
+POST {{CaliHub_API_HostAddress}}/api/users
+Content-Type: application/json
+
+{
+  "username": "testuser1",
+  "passwordHash": "Password123!",
+  "email": "testuser1@example.com",
+  "firstName": "ישראל",
+  "lastName": "ישראלי",
+  "roleId": 1,
+  "isActive": true
+}
+
+###
+
+### 6. עדכון תפקיד למשתמש
+PUT {{CaliHub_API_HostAddress}}/api/users/1/role
+Content-Type: application/json
+
+2
+
+###
+
+### 7. עדכון סיסמה למשתמש
+PUT {{CaliHub_API_HostAddress}}/api/users/1/password
+Content-Type: application/json
+
+"NewSecurePassword123!"
+
+###
+
+### 8. עדכון אימייל למשתמש
+PUT {{CaliHub_API_HostAddress}}/api/users/1/email
+Content-Type: application/json
+
+"updated_email@example.com"
