@@ -1,23 +1,54 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="d-flex flex-column min-vh-100 bg-dark text-light">
+    <!-- סרגל עליון (Navbar) -->
+    <header class="border-bottom border-secondary bg-black sticky-top py-2 shadow-sm">
+        <div class="container d-flex justify-content-between align-items-center">
+            <!-- לוגו המערכת -->
+            <div class="d-flex align-items-center gap-3">
+                <Logo />
+            </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <!-- תפריט קישורים מרכזי -->
+            <nav class="d-none d-lg-flex align-items-center gap-3">
+                <a href="/" class="nav-link text-light fw-semibold px-2">
+                    <i class="bi bi-journal-bookmark text-primary me-1"></i> תוכניות אימון
+                </a>
+                <a href="/" class="nav-link text-light fw-semibold px-2">
+                    <i class="bi bi-geo-alt text-primary me-1"></i> מפת פארקים
+                </a>
+                <a href="/" class="nav-link text-light fw-semibold px-2">
+                    <i class="bi bi-calendar-event text-primary me-1"></i> תיאום אימונים
+                </a>
+                <a href="/" class="nav-link text-light fw-semibold px-2">
+                    <i class="bi bi-grid text-primary me-1"></i> פיד קהילה
+                </a>
+                <a href="/" class="nav-link text-primary fw-bold px-2 border border-primary border-opacity-30 rounded px-3 py-1 bg-primary bg-opacity-10">
+                    <i class="bi bi-robot me-1"></i> מאמן CaliBot AI
+                </a>
+            </nav>
+
+            <!-- כפתורי התחברות והרשמה -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="/login" class="btn btn-outline-light btn-sm px-3">התחברות</a>
+                <a href="/register" class="btn btn-primary btn-sm px-3 fw-bold">הרשמה חינם</a>
+            </div>
         </div>
+    </header>
 
-        <article class="content px-4">
-            @Body
-        </article>
+    <!-- תוכן הדף -->
+    <main class="flex-grow-1">
+        @Body
     </main>
-</div>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <!-- Footer -->
+    <footer class="border-top border-secondary bg-black py-4 text-center text-secondary small mt-auto">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+                <Logo />
+                <span class="fw-bold text-light">CaliHub קליסטניקס ישראל</span>
+            </div>
+            <p class="mb-0">© 2026 CaliHub. כל הזכויות שמורות. אימוני משקל גוף ואינטליגנציה ספורטיבית.</p>
+        </div>
+    </footer>
 </div>

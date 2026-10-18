@@ -1,0 +1,38 @@
+﻿<div class="mb-3">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label for="@Id" class="form-label fw-bold text-light">@Label</label>
+    }
+
+    <input type="@Type"
+           id="@Id"
+           class="form-control form-control-dark @(string.IsNullOrEmpty(ErrorMessage) ? "" : "is-invalid")"
+           placeholder="@Placeholder"
+           dir="@Dir"
+           value="@Value"
+           @onchange="OnInputChanged" />
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="invalid-feedback d-block mt-1 text-danger">
+            @ErrorMessage
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Type { get; set; } = "text";
+    [Parameter] public string Placeholder { get; set; } = string.Empty;
+    [Parameter] public string Dir { get; set; } = "rtl";
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string ErrorMessage { get; set; } = string.Empty;
+
+    private async Task OnInputChanged(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString() ?? string.Empty;
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

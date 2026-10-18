@@ -1,0 +1,61 @@
+﻿/* 1. דריסת משתני הצבעים של Bootstrap והגדרת Theme כהה */
+:root {
+    --bs-primary: #ff6600;
+    --bs-primary-rgb: 255, 102, 0;
+    --bs-body-bg: #121212;
+    --bs-body-color: #f8f9fa;
+    --card-bg: #1e1e1e;
+    --border-color: #333333;
+    --input-bg: #2a2a2a;
+}
+
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh;
+}
+
+/* 2. עיצוב שדות טופס וכפתורים */
+.form-control, .form-select {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: #ffffff;
+}
+
+    .form-control:focus, .form-select:focus {
+        background-color: var(--input-bg);
+        border-color: var(--bs-primary);
+        color: #ffffff;
+        box-shadow: 0 0 0 0.25rem rgba(255, 102, 0, 0.25);
+    }
+
+    .form-control::placeholder {
+        color: #888888;
+    }
+
+.btn-primary {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #ffffff;
+    font-weight: bold;
+}
+
+    .btn-primary:hover {
+        background-color: #e05500;
+        border-color: #e05500;
+        color: #ffffff;
+    }
+
+/* 3. כרטיסיות */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--bs-body-color);
+}
+
+/* 4. עיצוב לוגו */
+.logo-img {
+    max-height: 45px;
+    width: auto;
+}
