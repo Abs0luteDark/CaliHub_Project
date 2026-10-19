@@ -1,5 +1,136 @@
-﻿<h3>Login</h3>
+﻿@page "/login"
+@rendermode InteractiveServer
+
+<div class="flex flex-col w-full relative items-center justify-center py-6 sm:py-10">
+    <div class="relative w-full max-w-md overflow-hidden rounded-2xl bg-surface-container-low shadow-2xl p-6 sm:p-8 flex flex-col items-center border border-outline-variant/30 text-right">
+        <!-- אפקט הילה ברקע -->
+        <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-container/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- לוגו וכותרות -->
+        <div class="relative z-10 flex flex-col items-center w-full mb-6 text-center">
+            <div class="flex items-center justify-center mb-3">
+                <img alt="CaliHub Logo" class="h-10 sm:h-12 w-auto object-contain drop-shadow-md" src="@Assets["images/CaliHub-logo.png"]" />
+            </div>
+
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold tracking-wide mb-3">
+                <span class="material-symbols-outlined text-[15px] text-primary">bolt</span>
+                <span>קהילת הקליסטניקס של ישראל</span>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-bold text-on-surface text-center mb-1">
+                ברוך שובך ל-CaliHub!
+            </h1>
+            <p class="text-sm text-on-surface-variant text-center max-w-sm">
+                התחבר לחשבונך כדי להמשיך באימונים, לעקוב אחר שיאים אישיים ולהתייעץ עם CaliBot.
+            </p>
+        </div>
+
+        <!-- טופס ההתחברות -->
+        <form class="relative z-10 w-full flex flex-col gap-4">
+            <!-- שדה 1: אימייל / שם משתמש -->
+            <div class="flex flex-col gap-1.5 text-right w-full">
+                <label class="flex items-center gap-1.5 text-xs font-semibold text-on-surface" for="login-id">
+                    <span class="material-symbols-outlined text-[18px] text-primary">account_circle</span>
+                    <span>אימייל או שם משתמש</span>
+                </label>
+                <div class="relative flex items-center w-full">
+                    <input class="w-full h-[52px] bg-surface rounded-xl pr-11 pl-4 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container border border-outline-variant/30 transition-all"
+                           dir="ltr" id="login-id" placeholder="athlete@calihub.co.il או DanCali" type="text" @bind="identifier" @bind:event="oninput" />
+                    <div class="absolute right-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[20px]">person</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- שדה 2: סיסמה -->
+            <div class="flex flex-col gap-1.5 text-right w-full">
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-1.5 text-xs font-semibold text-on-surface" for="login-password">
+                        <span class="material-symbols-outlined text-[18px] text-primary">lock</span>
+                        <span>סיסמה</span>
+                    </label>
+                    <a class="text-xs text-primary hover:underline transition-colors" href="#">
+                        שכחת סיסמה?
+                    </a>
+                </div>
+                <div class="relative flex items-center w-full">
+                    <input class="w-full h-[52px] bg-surface rounded-xl pr-11 pl-12 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container border border-outline-variant/30 tracking-widest transition-all"
+                           dir="ltr" id="login-password" placeholder="••••••••••••" type="@(showPassword ? "text" : "password")" @bind="password" @bind:event="oninput" />
+                    <div class="absolute right-3.5 flex items-center pointer-events-none text-on-surface-variant">
+                        <span class="material-symbols-outlined text-[20px]">key</span>
+                    </div>
+                    <button aria-label="הצג סיסמה" class="absolute left-3.5 flex items-center justify-center text-on-surface-variant hover:text-on-surface p-1 transition-colors"
+                            type="button" @onclick="TogglePassword">
+                        <span class="material-symbols-outlined text-[20px]">@(showPassword ? "visibility_off" : "visibility")</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- תיבת "זכור אותי" -->
+            <div class="flex items-center justify-start gap-2.5 pt-0.5">
+                <input class="w-5 h-5 rounded accent-primary-container bg-surface cursor-pointer focus:ring-0 focus:outline-none"
+                       id="remember-me" type="checkbox" @bind="rememberMe" />
+                <label class="text-sm text-on-surface-variant select-none cursor-pointer hover:text-on-surface transition-colors" for="remember-me">
+                    זכור אותי במכשיר זה
+                </label>
+            </div>
+
+            <!-- כפתור להתחברות -->
+            <button class="mt-2 w-full h-[52px] rounded-xl bg-primary-container hover:bg-primary-container/90 active:scale-[0.99] text-on-primary-container font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20 transition-all cursor-pointer"
+                    type="button">
+                <span>התחבר לחשבון</span>
+                <span class="material-symbols-outlined text-[22px]">bolt</span>
+            </button>
+
+            <!-- מפריד -->
+            <div class="relative flex items-center justify-center my-3 w-full">
+                <div class="w-full h-px bg-surface-variant"></div>
+                <span class="absolute px-3 bg-surface-container-low text-on-surface-variant text-xs whitespace-nowrap">
+                    או התחברות מהירה באמצעות
+                </span>
+            </div>
+
+            <!-- התחברות ב-Google -->
+            <button class="w-full h-[50px] rounded-xl bg-surface hover:bg-surface-container active:scale-[0.99] text-on-surface text-xs font-semibold flex items-center justify-center gap-3 transition-colors border border-outline-variant/30 cursor-pointer"
+                    type="button">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17Z" fill="#4285F4"></path>
+                    <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z" fill="#34A853"></path>
+                    <path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15Z" fill="#FBBC05"></path>
+                    <path d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98Z" fill="#EA4335"></path>
+                </svg>
+                <span>המשך באמצעות Google</span>
+            </button>
+        </form>
+
+        <!-- מעבר לדף הרשמה -->
+        <div class="relative z-10 mt-6 pt-5 w-full flex items-center justify-center bg-surface-container-lowest/40 rounded-xl py-3 px-4">
+            <p class="text-sm text-on-surface-variant flex items-center gap-1.5 flex-wrap justify-center">
+                <span>עוד לא רשום ל-CaliHub?</span>
+                <a class="text-primary font-bold text-sm hover:underline transition-colors inline-flex items-center gap-1" href="/register">
+                    <span>צור חשבון חדש בחינם</span>
+                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <!-- כותרת תחתית -->
+    <div class="mt-4 flex items-center justify-center text-center px-2">
+        <p class="text-xs text-on-surface-variant/70">
+            ⚡ מופעל על ידי מנוע ביצועי AI וקהילת הרחוב של ישראל • CaliHub 2026
+        </p>
+    </div>
+</div>
 
 @code {
+    private string identifier = "";
+    private string password = "";
+    private bool rememberMe = false;
+    private bool showPassword = false;
 
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
+    }
 }
