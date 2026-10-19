@@ -1,5 +1,248 @@
-﻿<h3>Register</h3>
+﻿@page "/register"
+@rendermode InteractiveServer
+
+<div class="flex flex-col w-full relative items-center justify-center py-6 sm:py-10">
+    <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary-container/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative w-full max-w-md bg-surface-container-low rounded-xl shadow-2xl p-6 sm:p-8 flex flex-col gap-4 overflow-hidden border border-outline-variant/30 text-right">
+
+        <div class="flex flex-col items-center text-center gap-2 pt-1">
+            <div class="relative flex items-center justify-center p-1 mb-1">
+                <img alt="CaliHub Logo" class="h-12 sm:h-14 w-auto object-contain drop-shadow-md" src="@Assets["images/CaliHub-logo.png"]" />
+            </div>
+
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/15 text-primary text-xs font-semibold">
+                <span class="material-symbols-outlined text-sm text-primary">bolt</span>
+                <span>קהילת הקליסטניקס של ישראל</span>
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-bold text-on-surface tracking-tight mt-1">
+                הצטרף לקהילת CaliHub!
+            </h1>
+            <p class="text-sm text-on-surface-variant max-w-sm px-2">
+                פתח חשבון בחינם ותאם אימונים עם אלפי מתאמנים ברחבי הארץ ברמת דיוק וביצוע שיא.
+            </p>
+        </div>
+
+        @if (showValidationBanner)
+        {
+            <div class="flex items-start gap-2 p-3 bg-error-container/40 text-on-error-container rounded-lg transition-all duration-300">
+                <span class="material-symbols-outlined text-error text-xl shrink-0 mt-0.5">error</span>
+                <div class="flex flex-col flex-1 text-right">
+                    <span class="text-xs font-bold text-error">שגיאת רישום זוהתה</span>
+                    <span class="text-xs leading-relaxed text-on-error-container">
+                        @errorMessage
+                    </span>
+                </div>
+                <button aria-label="סגור התראה" class="text-error/80 hover:text-error transition-colors p-1" @onclick="() => showValidationBanner = false" type="button">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+        }
+
+        <form class="flex flex-col gap-4">
+            <!-- שדה 1: שם משתמש -->
+            <div class="flex flex-col gap-1.5 text-right">
+                <div class="flex justify-between items-center px-1">
+                    <label class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-primary text-base">person</span>
+                        <span>שם משתמש מלא</span>
+                    </label>
+                </div>
+                <div class="relative flex items-center">
+                    <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30"
+                           placeholder="בחר כינוי ספורטיבי..." type="text" @bind="username" @bind:event="oninput" />
+                    <span class="material-symbols-outlined absolute right-3 text-surface-tint/80 text-xl pointer-events-none">badge</span>
+                </div>
+            </div>
+
+            <!-- שדה 2: אימייל -->
+            <div class="flex flex-col gap-1.5 text-right">
+                <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-base">mail</span>
+                    <span>כתובת אימייל</span>
+                </label>
+                <div class="relative flex items-center">
+                    <input class="w-full h-12 bg-surface-container text-on-surface text-left rounded-lg pr-4 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 placeholder:text-surface-variant"
+                           dir="ltr" placeholder="athlete@calihub.co.il" type="email" @bind="email" @bind:event="oninput" />
+                    <span class="material-symbols-outlined absolute left-3 text-surface-tint/80 text-xl pointer-events-none">alternate_email</span>
+                </div>
+            </div>
+
+            <!-- שדה 3: רמת כוח (Dropdown מותאם אישית) -->
+            <div class="flex flex-col gap-1.5 text-right relative">
+                <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-base">fitness_center</span>
+                    <span>רמת כוח</span>
+                </label>
+
+                <div class="relative">
+                    <!-- כפתור הבחירה הראשי -->
+                    <button type="button" @onclick="ToggleDropdown" class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 text-right flex items-center justify-between transition-all @(isDropdownOpen ? "border-primary ring-1 ring-primary" : "")">
+                        <span class="@(string.IsNullOrEmpty(strengthLevel) ? "text-on-surface-variant" : "text-on-surface")">
+                            @GetStrengthLevelText(strengthLevel)
+                        </span>
+                        <span class="material-symbols-outlined text-on-surface-variant text-xl transition-transform duration-300 @(isDropdownOpen ? "rotate-180" : "")">expand_more</span>
+                    </button>
+                    <span class="material-symbols-outlined absolute right-3 top-3.5 text-surface-tint/80 text-xl pointer-events-none">stairs</span>
+
+                    <!-- רשימת האפשרויות המעוצבת -->
+                    @if (isDropdownOpen)
+                    {
+                        <!-- שכבת רקע בלתי נראית כדי לסגור את התפריט בלחיצה בחוץ -->
+                        <div class="fixed inset-0 z-40" @onclick="() => isDropdownOpen = false"></div>
+
+                        <div class="absolute z-50 w-full mt-2 bg-surface-container-high border border-outline-variant/40 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden">
+                            <ul class="py-2">
+                                <li @onclick='() => SelectStrengthLevel("")' class="px-4 py-3 text-sm cursor-pointer transition-colors flex items-center gap-2 @(strengthLevel == "" ? "bg-primary-container/15 text-primary border-r-4 border-primary" : "text-on-surface-variant hover:bg-surface-container-highest hover:text-primary")">
+                                    בחר את רמת הכוח שלך...
+                                </li>
+                                <li @onclick='() => SelectStrengthLevel("beginner")' class="px-4 py-3 text-sm cursor-pointer transition-colors flex items-center gap-2 @(strengthLevel == "beginner" ? "bg-primary-container/15 text-primary border-r-4 border-primary" : "text-on-surface hover:bg-surface-container-highest hover:text-primary")">
+                                    מתחיל (Beginner — 0-5 עליות מתח / מקבילים)
+                                </li>
+                                <li @onclick='() => SelectStrengthLevel("intermediate")' class="px-4 py-3 text-sm cursor-pointer transition-colors flex items-center gap-2 @(strengthLevel == "intermediate" ? "bg-primary-container/15 text-primary border-r-4 border-primary" : "text-on-surface hover:bg-surface-container-highest hover:text-primary")">
+                                    בינוני (Intermediate — Muscle-ups / Dips / מתח מלא)
+                                </li>
+                                <li @onclick='() => SelectStrengthLevel("advanced")' class="px-4 py-3 text-sm cursor-pointer transition-colors flex items-center gap-2 @(strengthLevel == "advanced" ? "bg-primary-container/15 text-primary border-r-4 border-primary" : "text-on-surface hover:bg-surface-container-highest hover:text-primary")">
+                                    מתקדם (Advanced — Planche / Front Lever / Freestyle)
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- שדה 4: סיסמה ומד חוזק -->
+            <div class="flex flex-col gap-1.5 text-right">
+                <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-base">lock</span>
+                    <span>סיסמה מאובטחת</span>
+                </label>
+                <div class="relative flex items-center">
+                    <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-11 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 tracking-widest"
+                           dir="ltr" type="@(showPassword ? "text" : "password")" placeholder="••••••••" @bind="password" @bind:event="oninput" />
+                    <span class="material-symbols-outlined absolute right-3 text-surface-tint/80 text-xl pointer-events-none">key</span>
+                    <button aria-label="הצג סיסמה" class="absolute left-3 text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-1"
+                            type="button" @onclick="TogglePassword">
+                        <span class="material-symbols-outlined text-xl">@(showPassword ? "visibility_off" : "visibility")</span>
+                    </button>
+                </div>
+
+                <div class="flex flex-col gap-1 pt-1 px-1 transition-opacity duration-300 @(string.IsNullOrEmpty(password) ? "opacity-0" : "opacity-100")">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-on-surface-variant">חוזק סיסמה:</span>
+                        <span class="text-primary font-bold">@(password.Length > 8 ? "חזקה" : "חלשה")</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden flex">
+                        <div class="h-full bg-primary-container rounded-full transition-all duration-500 shadow-sm shadow-primary" style="width: @(password.Length > 8 ? "85%" : (password.Length > 0 ? "30%" : "0%"))"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- שדה 5: אימות סיסמה -->
+            <div class="flex flex-col gap-1.5 text-right">
+                <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-base">verified_user</span>
+                    <span>אימות סיסמה</span>
+                </label>
+                <div class="relative flex items-center">
+                    <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 tracking-widest"
+                           dir="ltr" type="password" placeholder="••••••••" @bind="confirmPassword" @bind:event="oninput" />
+                    <span class="material-symbols-outlined absolute right-3 text-outline text-xl pointer-events-none">lock_reset</span>
+                </div>
+            </div>
+
+            <!-- תיבת אישור תנאים -->
+            <div class="flex items-start gap-3 px-1 pt-1 select-none text-right">
+                <label class="relative flex items-center cursor-pointer mt-0.5">
+                    <input class="peer sr-only" id="terms-cb" type="checkbox" @bind="agreedToTerms" />
+                    <div class="w-5 h-5 bg-surface-container rounded peer-checked:bg-primary-container flex items-center justify-center transition-all duration-200 shadow-inner border border-outline-variant/40">
+                        <span class="material-symbols-outlined text-on-primary-container text-base font-bold scale-0 peer-checked:scale-100 transition-transform duration-200">check</span>
+                    </div>
+                </label>
+                <label class="text-xs text-on-surface-variant cursor-pointer leading-relaxed" for="terms-cb">
+                    אני מאשר את <a class="text-primary hover:underline transition" href="#">תנאי השימוש</a> ואת <a class="text-primary hover:underline transition" href="#">מדיניות הפרטיות</a> של קהילת CaliHub.
+                </label>
+            </div>
+
+            <!-- כפתור שליחה ראשי -->
+            <button class="w-full h-12 mt-2 py-3 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-bold text-base rounded-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-primary-container/40 transition-all duration-200 cursor-pointer" type="button">
+                <span>צור חשבון והתחל להתאמן</span>
+                <span class="material-symbols-outlined text-2xl">rocket_launch</span>
+            </button>
+
+            <!-- מפריד -->
+            <div class="relative flex py-1 items-center">
+                <div class="flex-grow bg-surface-container-highest h-[1px]"></div>
+                <span class="flex-shrink mx-4 text-xs text-on-surface-variant/80">או הרשמה מהירה באמצעות</span>
+                <div class="flex-grow bg-surface-container-highest h-[1px]"></div>
+            </div>
+
+            <!-- התחברות מהירה ב-Google -->
+            <button class="h-11 px-3 bg-surface-container hover:bg-surface-container-high rounded-lg flex items-center justify-center gap-2 text-on-surface text-xs font-semibold transition-all border border-outline-variant/30" type="button">
+                <svg class="w-4 h-4" viewBox="0 0 24 24">
+                    <path d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" fill="#EA4335"></path>
+                    <path d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" fill="#4285F4"></path>
+                    <path d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3 0-.9.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z" fill="#FBBC05"></path>
+                    <path d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z" fill="#34A853"></path>
+                </svg>
+                <span>Google</span>
+            </button>
+        </form>
+
+        <div class="mt-1 text-center py-2 border-t border-surface-container-highest/30">
+            <p class="text-sm text-on-surface-variant">
+                כבר רשום ל-CaliHub?
+                <a class="text-primary font-semibold underline inline-flex items-center gap-1 transition-all mr-1" href="/login">
+                    <span>התחבר כאן לחשבונך</span>
+                    <span class="material-symbols-outlined text-sm">arrow_back</span>
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <div class="w-full text-center mt-4 text-xs text-on-surface-variant/60 flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-xs text-primary/70">fitness_center</span>
+        <span>מופעל על ידי מנוע ביצועי AI וקהילת הרחוב של ישראל • CaliHub 2026</span>
+    </div>
+</div>
 
 @code {
+    private bool showValidationBanner = false;
+    private string errorMessage = "";
 
+    private bool showPassword = false;
+    private string username = "";
+    private string email = "";
+    private string password = "";
+    private string confirmPassword = "";
+    private bool agreedToTerms = false;
+
+    // ניהול תפריט רמת כוח
+    private bool isDropdownOpen = false;
+    private string strengthLevel = "";
+
+    private void ToggleDropdown()
+    {
+        isDropdownOpen = !isDropdownOpen;
+    }
+
+    private void SelectStrengthLevel(string level)
+    {
+        strengthLevel = level;
+        isDropdownOpen = false;
+    }
+
+    private string GetStrengthLevelText(string level) => level switch
+    {
+        "beginner" => "מתחיל (Beginner — 0-5 עליות מתח / מקבילים)",
+        "intermediate" => "בינוני (Intermediate — Muscle-ups / Dips / מתח מלא)",
+        "advanced" => "מתקדם (Advanced — Planche / Front Lever / Freestyle)",
+        _ => "בחר את רמת הכוח שלך..."
+    };
+
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
+    }
 }
