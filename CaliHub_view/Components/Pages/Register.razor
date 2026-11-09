@@ -1,5 +1,9 @@
 ﻿@page "/register"
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using System.Net.Mail
+@using CaliHub_Model
+@inject HttpClient Http
+@inject NavigationManager Navigation
 
 <div class="flex flex-col w-full relative items-center justify-center py-6 sm:py-10">
     <div class="absolute -top-10 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary-container/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -8,7 +12,7 @@
 
         <div class="flex flex-col items-center text-center gap-2 pt-1">
             <div class="relative flex items-center justify-center p-1 mb-1">
-                <img alt="CaliHub Logo" class="h-12 sm:h-14 w-auto object-contain drop-shadow-md" src="@Assets["images/CaliHub-logo.png"]" />
+                <img alt="CaliHub Logo" class="h-12 sm:h-14 w-auto object-contain drop-shadow-md" src="images/CaliHub-logo.png" />
             </div>
 
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/15 text-primary text-xs font-semibold">
@@ -29,7 +33,7 @@
             <div class="flex items-start gap-2 p-3 bg-error-container/40 text-on-error-container rounded-lg transition-all duration-300">
                 <span class="material-symbols-outlined text-error text-xl shrink-0 mt-0.5">error</span>
                 <div class="flex flex-col flex-1 text-right">
-                    <span class="text-xs font-bold text-error">שגיאת רישום זוהתה</span>
+                    <span class="text-xs font-bold text-error">שגיאת רישום</span>
                     <span class="text-xs leading-relaxed text-on-error-container">
                         @errorMessage
                     </span>
@@ -37,6 +41,19 @@
                 <button aria-label="סגור התראה" class="text-error/80 hover:text-error transition-colors p-1" @onclick="() => showValidationBanner = false" type="button">
                     <span class="material-symbols-outlined text-base">close</span>
                 </button>
+            </div>
+        }
+
+        @if (isRegistered)
+        {
+            <div class="flex items-start gap-2 p-3 bg-green-500/20 text-green-700 rounded-lg transition-all duration-300">
+                <span class="material-symbols-outlined text-green-600 text-xl shrink-0 mt-0.5">check_circle</span>
+                <div class="flex flex-col flex-1 text-right">
+                    <span class="text-xs font-bold text-green-700">ההרשמה הצליחה!</span>
+                    <span class="text-xs leading-relaxed text-green-800">
+                        עוברים לדף הכניסה בעוד <strong>@secondsLeft</strong> שניות.
+                    </span>
+                </div>
             </div>
         }
 
@@ -51,7 +68,7 @@
                 </div>
                 <div class="relative flex items-center">
                     <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30"
-                           placeholder="בחר כינוי ספורטיבי..." type="text" @bind="username" @bind:event="oninput" />
+                           placeholder="בחר כינוי ספורטיבי..." type="text" @bind="username" @bind:event="oninput" disabled="@isBusy" />
                     <span class="material-symbols-outlined absolute right-3 text-surface-tint/80 text-xl pointer-events-none">badge</span>
                 </div>
             </div>
@@ -64,12 +81,12 @@
                 </label>
                 <div class="relative flex items-center">
                     <input class="w-full h-12 bg-surface-container text-on-surface text-left rounded-lg pr-4 pl-10 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 placeholder:text-surface-variant"
-                           dir="ltr" placeholder="athlete@calihub.co.il" type="email" @bind="email" @bind:event="oninput" />
+                           dir="ltr" placeholder="athlete@calihub.co.il" type="email" @bind="email" @bind:event="oninput" disabled="@isBusy" />
                     <span class="material-symbols-outlined absolute left-3 text-surface-tint/80 text-xl pointer-events-none">alternate_email</span>
                 </div>
             </div>
 
-            <!-- שדה 3: רמת כוח (Dropdown מותאם אישית) -->
+            <!-- שדה 3: רמת כוח -->
             <div class="flex flex-col gap-1.5 text-right relative">
                 <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-primary text-base">fitness_center</span>
@@ -77,8 +94,7 @@
                 </label>
 
                 <div class="relative">
-                    <!-- כפתור הבחירה הראשי -->
-                    <button type="button" @onclick="ToggleDropdown" class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 text-right flex items-center justify-between transition-all @(isDropdownOpen ? "border-primary ring-1 ring-primary" : "")">
+                    <button type="button" @onclick="ToggleDropdown" disabled="@isBusy" class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 text-right flex items-center justify-between transition-all @(isDropdownOpen ? "border-primary ring-1 ring-primary" : "") disabled:opacity-70">
                         <span class="@(string.IsNullOrEmpty(strengthLevel) ? "text-on-surface-variant" : "text-on-surface")">
                             @GetStrengthLevelText(strengthLevel)
                         </span>
@@ -86,12 +102,9 @@
                     </button>
                     <span class="material-symbols-outlined absolute right-3 top-3.5 text-surface-tint/80 text-xl pointer-events-none">stairs</span>
 
-                    <!-- רשימת האפשרויות המעוצבת -->
                     @if (isDropdownOpen)
                     {
-                        <!-- שכבת רקע בלתי נראית כדי לסגור את התפריט בלחיצה בחוץ -->
                         <div class="fixed inset-0 z-40" @onclick="() => isDropdownOpen = false"></div>
-
                         <div class="absolute z-50 w-full mt-2 bg-surface-container-high border border-outline-variant/40 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden">
                             <ul class="py-2">
                                 <li @onclick='() => SelectStrengthLevel("")' class="px-4 py-3 text-sm cursor-pointer transition-colors flex items-center gap-2 @(strengthLevel == "" ? "bg-primary-container/15 text-primary border-r-4 border-primary" : "text-on-surface-variant hover:bg-surface-container-highest hover:text-primary")">
@@ -112,7 +125,7 @@
                 </div>
             </div>
 
-            <!-- שדה 4: סיסמה ומד חוזק -->
+            <!-- שדה 4: סיסמה -->
             <div class="flex flex-col gap-1.5 text-right">
                 <label class="text-xs font-semibold text-on-surface px-1 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-primary text-base">lock</span>
@@ -120,7 +133,7 @@
                 </label>
                 <div class="relative flex items-center">
                     <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-11 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 tracking-widest"
-                           dir="ltr" type="@(showPassword ? "text" : "password")" placeholder="••••••••" @bind="password" @bind:event="oninput" />
+                           dir="ltr" type="@(showPassword ? "text" : "password")" placeholder="••••••••" @bind="password" @bind:event="oninput" disabled="@isBusy" />
                     <span class="material-symbols-outlined absolute right-3 text-surface-tint/80 text-xl pointer-events-none">key</span>
                     <button aria-label="הצג סיסמה" class="absolute left-3 text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-1"
                             type="button" @onclick="TogglePassword">
@@ -147,7 +160,7 @@
                 </label>
                 <div class="relative flex items-center">
                     <input class="w-full h-12 bg-surface-container text-on-surface rounded-lg pr-10 pl-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary shadow-inner border border-outline-variant/30 tracking-widest"
-                           dir="ltr" type="password" placeholder="••••••••" @bind="confirmPassword" @bind:event="oninput" />
+                           dir="ltr" type="password" placeholder="••••••••" @bind="confirmPassword" @bind:event="oninput" disabled="@isBusy" />
                     <span class="material-symbols-outlined absolute right-3 text-outline text-xl pointer-events-none">lock_reset</span>
                 </div>
             </div>
@@ -155,7 +168,7 @@
             <!-- תיבת אישור תנאים -->
             <div class="flex items-start gap-3 px-1 pt-1 select-none text-right">
                 <label class="relative flex items-center cursor-pointer mt-0.5">
-                    <input class="peer sr-only" id="terms-cb" type="checkbox" @bind="agreedToTerms" />
+                    <input class="peer sr-only" id="terms-cb" type="checkbox" @bind="agreedToTerms" disabled="@isBusy" />
                     <div class="w-5 h-5 bg-surface-container rounded peer-checked:bg-primary-container flex items-center justify-center transition-all duration-200 shadow-inner border border-outline-variant/40">
                         <span class="material-symbols-outlined text-on-primary-container text-base font-bold scale-0 peer-checked:scale-100 transition-transform duration-200">check</span>
                     </div>
@@ -166,9 +179,10 @@
             </div>
 
             <!-- כפתור שליחה ראשי -->
-            <button class="w-full h-12 mt-2 py-3 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-bold text-base rounded-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-primary-container/40 transition-all duration-200 cursor-pointer" type="button">
-                <span>צור חשבון והתחל להתאמן</span>
-                <span class="material-symbols-outlined text-2xl">rocket_launch</span>
+            <button class="w-full h-12 mt-2 py-3 px-4 bg-primary-container hover:bg-primary-container/90 text-on-primary-container font-bold text-base rounded-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-primary-container/40 transition-all duration-200 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    type="button" disabled="@(isBusy || isRegistered)" @onclick="RegisterAsync">
+                <span>@(isBusy ? "בודקים נתונים..." : "צור חשבון והתחל להתאמן")</span>
+                <span class="material-symbols-outlined text-2xl">@(isBusy ? "hourglass_empty" : "rocket_launch")</span>
             </button>
 
             <!-- מפריד -->
@@ -179,7 +193,7 @@
             </div>
 
             <!-- התחברות מהירה ב-Google -->
-            <button class="h-11 px-3 bg-surface-container hover:bg-surface-container-high rounded-lg flex items-center justify-center gap-2 text-on-surface text-xs font-semibold transition-all border border-outline-variant/30" type="button">
+            <button class="h-11 px-3 bg-surface-container hover:bg-surface-container-high rounded-lg flex items-center justify-center gap-2 text-on-surface text-xs font-semibold transition-all border border-outline-variant/30 disabled:opacity-50" type="button" disabled="@isBusy">
                 <svg class="w-4 h-4" viewBox="0 0 24 24">
                     <path d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" fill="#EA4335"></path>
                     <path d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" fill="#4285F4"></path>
@@ -210,6 +224,9 @@
 @code {
     private bool showValidationBanner = false;
     private string errorMessage = "";
+    private bool isBusy = false;
+    private bool isRegistered = false;
+    private int secondsLeft = 3;
 
     private bool showPassword = false;
     private string username = "";
@@ -244,5 +261,103 @@
     private void TogglePassword()
     {
         showPassword = !showPassword;
+    }
+
+    // הפעולה המרכזית להרשמה
+    private async Task RegisterAsync()
+    {
+        errorMessage = null;
+        showValidationBanner = false;
+
+        // בדיקות קלט מקומיות
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(email) ||
+            string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            errorMessage = "יש למלא את כל השדות.";
+            showValidationBanner = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(strengthLevel))
+        {
+            errorMessage = "יש לבחור רמת כוח.";
+            showValidationBanner = true;
+            return;
+        }
+
+        if (!agreedToTerms)
+        {
+            errorMessage = "חובה לאשר את תנאי השימוש.";
+            showValidationBanner = true;
+            return;
+        }
+
+        if (!MailAddress.TryCreate(email.Trim(), out _))
+        {
+            errorMessage = "כתובת האימייל לא תקינה.";
+            showValidationBanner = true;
+            return;
+        }
+
+        if (password != confirmPassword)
+        {
+            errorMessage = "הסיסמה ואימות הסיסמה לא זהים.";
+            showValidationBanner = true;
+            return;
+        }
+
+        isBusy = true;
+
+        try
+        {
+            // בדיקת כפילויות בשרת
+            bool usernameExists = await Http.GetFromJsonAsync<bool>($"api/users/exists/{Uri.EscapeDataString(username.Trim())}");
+            if (usernameExists)
+            {
+                errorMessage = "שם המשתמש כבר תפוס. בחרו שם אחר.";
+                showValidationBanner = true;
+                return;
+            }
+
+            bool emailExists = await Http.GetFromJsonAsync<bool>($"api/users/email-exists/{Uri.EscapeDataString(email.Trim())}");
+            if (emailExists)
+            {
+                errorMessage = "האימייל הזה כבר רשום במערכת.";
+                showValidationBanner = true;
+                return;
+            }
+
+            // יצירת המשתמש בשרת
+            User newUser = new User(username.Trim(), email.Trim(), password, 1);
+            HttpResponseMessage response = await Http.PostAsJsonAsync("api/users", newUser);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = "ההרשמה נכשלה. נסו שוב.";
+                showValidationBanner = true;
+                return;
+            }
+
+            // הצלחה: ספירה לאחור ומעבר לדף הכניסה
+            isRegistered = true;
+            showValidationBanner = false; // מסתיר את השגיאות במידה והיו
+
+            while (secondsLeft > 0)
+            {
+                StateHasChanged();
+                await Task.Delay(1000);
+                secondsLeft--;
+            }
+            Navigation.NavigateTo("login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"שגיאה מפורטת: {ex.Message} | {ex.InnerException?.Message}";
+            showValidationBanner = true;
+        }
+        finally
+        {
+            isBusy = false;
+        }
     }
 }

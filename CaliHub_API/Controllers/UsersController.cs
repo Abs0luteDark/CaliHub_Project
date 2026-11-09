@@ -78,6 +78,22 @@ namespace CaliHub_API.Controllers
             return CreatedAtAction(nameof(GetUserById), new { id = newId }, user); // 201 Created
         }
 
+        // GET: api/users/exists/{username} - בדיקה אם שם משתמש תפוס
+        [HttpGet("exists/{username}")]
+        public async Task<IActionResult> CheckUsernameExists(string username)
+        {
+            bool exists = await _userDb.UsernameExistsAsync(username);
+            return Ok(exists);
+        }
+
+        // GET: api/users/email-exists/{email} - בדיקה אם אימייל תפוס
+        [HttpGet("email-exists/{email}")]
+        public async Task<IActionResult> CheckEmailExists(string email)
+        {
+            bool exists = await _userDb.EmailExistsAsync(email);
+            return Ok(exists);
+        }
+
         // PUT: api/users/5/role - עדכון תפקיד משתמש
         [HttpPut("{id}/role")]
         public async Task<IActionResult> UpdateRole(int id, [FromBody] int newRoleId)

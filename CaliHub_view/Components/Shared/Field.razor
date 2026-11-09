@@ -10,7 +10,7 @@
            placeholder="@Placeholder"
            dir="@Dir"
            value="@Value"
-           @onchange="OnInputChanged" />
+           @onchange="OnValueChanged" />
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
@@ -30,7 +30,7 @@
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
     [Parameter] public string ErrorMessage { get; set; } = string.Empty;
 
-    private async Task OnInputChanged(ChangeEventArgs e)
+    private async Task OnValueChanged(ChangeEventArgs e)
     {
         Value = e.Value?.ToString() ?? string.Empty;
         await ValueChanged.InvokeAsync(Value);

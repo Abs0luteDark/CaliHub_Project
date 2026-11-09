@@ -2,6 +2,11 @@ using CaliHub_view.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+string apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? throw new InvalidOperationException("ApiBaseUrl not found in appsettings.json.");
+
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7030/") });
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
