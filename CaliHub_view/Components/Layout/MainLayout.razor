@@ -1,4 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject UserSession Session
+@inject NavigationManager Navigation
 
 <div class="min-h-screen bg-background text-on-surface flex flex-col font-body-md">
     <!-- Header תפריט עליון -->
@@ -37,8 +40,23 @@
             </div>
 
             <div class="flex items-center gap-3">
-                <a href="/login" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-sm text-on-surface hover:text-primary transition-colors">התחברות</a>
-                <a href="/register" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary-container text-on-primary-container text-sm font-bold shadow-[0_0_20px_rgba(255,144,0,0.35)] hover:shadow-[0_0_25px_rgba(255,144,0,0.5)] transition-all">הרשמה חינם</a>
+                @if (Session.IsLoggedIn)
+                {
+                    <span class="text-sm font-semibold text-on-surface flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[20px] text-primary">account_circle</span>
+                        <span>שלום, @Session.Username</span>
+                    </span>
+                    <button type="button" @onclick="Logout" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-surface-container-high hover:bg-primary-container/20 text-on-surface hover:text-primary border border-outline-variant/30 text-sm font-semibold transition-all cursor-pointer">
+                        <span>יציאה</span>
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                    </button>
+                }
+                else
+                {
+                    <span class="hidden md:inline-block text-xs font-medium text-on-surface-variant ml-1">שלום, אורח</span>
+                    <a href="/login" class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-sm text-on-surface hover:text-primary transition-colors">התחברות</a>
+                    <a href="/register" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary-container text-on-primary-container text-sm font-bold shadow-[0_0_20px_rgba(255,144,0,0.35)] hover:shadow-[0_0_25px_rgba(255,144,0,0.5)] transition-all">הרשמה חינם</a>
+                }
             </div>
         </div>
     </header>
@@ -59,3 +77,26 @@
         </div>
     </footer>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Session.OnChange += OnSessionChanged;   // נרשמים לאירוע
+    }
+
+    private void OnSessionChanged()
+    {
+        InvokeAsync(StateHasChanged);           // מעדכנים את הסרגל
+    }
+
+    private void Logout()
+    {
+        Session.Logout();
+        Navigation.NavigateTo("");
+    }
+
+    public void Dispose()
+    {
+        Session.OnChange -= OnSessionChanged;   // מבטלים את ההרשמה
+    }
+}

@@ -1,5 +1,9 @@
 ﻿@page "/login"
-@rendermode InteractiveServer
+@using System.Net
+@using CaliHub_Model
+@inject HttpClient Http
+@inject UserSession Session
+@inject NavigationManager Navigation
 
 <div class="flex flex-col w-full relative items-center justify-center py-6 sm:py-10">
     <div class="relative w-full max-w-md overflow-hidden rounded-2xl bg-surface-container-low shadow-2xl p-6 sm:p-8 flex flex-col items-center border border-outline-variant/30 text-right">
@@ -9,7 +13,7 @@
         <!-- לוגו וכותרות -->
         <div class="relative z-10 flex flex-col items-center w-full mb-6 text-center">
             <div class="flex items-center justify-center mb-3">
-                <img alt="CaliHub Logo" class="h-10 sm:h-12 w-auto object-contain drop-shadow-md" src="@Assets["images/CaliHub-logo.png"]" />
+                <img alt="CaliHub Logo" class="h-10 sm:h-12 w-auto object-contain drop-shadow-md" src="images/CaliHub-logo.png" />
             </div>
 
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-container/10 text-primary text-xs font-semibold tracking-wide mb-3">
@@ -25,6 +29,22 @@
             </p>
         </div>
 
+        @if (errorMessage != null)
+        {
+            <div class="relative z-10 flex items-start gap-2 p-3 bg-error-container/40 text-on-error-container rounded-lg transition-all duration-300 mb-4 w-full text-right">
+                <span class="material-symbols-outlined text-error text-xl shrink-0 mt-0.5">error</span>
+                <div class="flex flex-col flex-1">
+                    <span class="text-xs font-bold text-error">שגיאת התחברות</span>
+                    <span class="text-xs leading-relaxed text-on-error-container">
+                        @errorMessage
+                    </span>
+                </div>
+                <button aria-label="סגור התראה" class="text-error/80 hover:text-error transition-colors p-1" @onclick="() => errorMessage = null" type="button">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+        }
+
         <!-- טופס ההתחברות -->
         <form class="relative z-10 w-full flex flex-col gap-4">
             <!-- שדה 1: אימייל / שם משתמש -->
@@ -35,7 +55,7 @@
                 </label>
                 <div class="relative flex items-center w-full">
                     <input class="w-full h-[52px] bg-surface rounded-xl pr-11 pl-4 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container border border-outline-variant/30 transition-all"
-                           dir="ltr" id="login-id" placeholder="athlete@calihub.co.il או DanCali" type="text" @bind="identifier" @bind:event="oninput" />
+                           dir="ltr" id="login-id" placeholder="athlete@calihub.co.il או DanCali" type="text" @bind="identifier" @bind:event="oninput" disabled="@isBusy" />
                     <div class="absolute right-3.5 flex items-center pointer-events-none text-on-surface-variant">
                         <span class="material-symbols-outlined text-[20px]">person</span>
                     </div>
@@ -55,7 +75,7 @@
                 </div>
                 <div class="relative flex items-center w-full">
                     <input class="w-full h-[52px] bg-surface rounded-xl pr-11 pl-12 text-on-surface text-sm placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-container border border-outline-variant/30 tracking-widest transition-all"
-                           dir="ltr" id="login-password" placeholder="••••••••••••" type="@(showPassword ? "text" : "password")" @bind="password" @bind:event="oninput" />
+                           dir="ltr" id="login-password" placeholder="••••••••••••" type="@(showPassword ? "text" : "password")" @bind="password" @bind:event="oninput" disabled="@isBusy" />
                     <div class="absolute right-3.5 flex items-center pointer-events-none text-on-surface-variant">
                         <span class="material-symbols-outlined text-[20px]">key</span>
                     </div>
@@ -69,17 +89,17 @@
             <!-- תיבת "זכור אותי" -->
             <div class="flex items-center justify-start gap-2.5 pt-0.5">
                 <input class="w-5 h-5 rounded accent-primary-container bg-surface cursor-pointer focus:ring-0 focus:outline-none"
-                       id="remember-me" type="checkbox" @bind="rememberMe" />
+                       id="remember-me" type="checkbox" @bind="rememberMe" disabled="@isBusy" />
                 <label class="text-sm text-on-surface-variant select-none cursor-pointer hover:text-on-surface transition-colors" for="remember-me">
                     זכור אותי במכשיר זה
                 </label>
             </div>
 
             <!-- כפתור להתחברות -->
-            <button class="mt-2 w-full h-[52px] rounded-xl bg-primary-container hover:bg-primary-container/90 active:scale-[0.99] text-on-primary-container font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20 transition-all cursor-pointer"
-                    type="button">
-                <span>התחבר לחשבון</span>
-                <span class="material-symbols-outlined text-[22px]">bolt</span>
+            <button class="mt-2 w-full h-[52px] rounded-xl bg-primary-container hover:bg-primary-container/90 active:scale-[0.99] text-on-primary-container font-bold text-base flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    type="button" disabled="@isBusy" @onclick="LoginAsync">
+                <span>@(isBusy ? "מתחבר..." : "התחבר לחשבון")</span>
+                <span class="material-symbols-outlined text-[22px]">@(isBusy ? "hourglass_empty" : "bolt")</span>
             </button>
 
             <!-- מפריד -->
@@ -91,8 +111,8 @@
             </div>
 
             <!-- התחברות ב-Google -->
-            <button class="w-full h-[50px] rounded-xl bg-surface hover:bg-surface-container active:scale-[0.99] text-on-surface text-xs font-semibold flex items-center justify-center gap-3 transition-colors border border-outline-variant/30 cursor-pointer"
-                    type="button">
+            <button class="w-full h-[50px] rounded-xl bg-surface hover:bg-surface-container active:scale-[0.99] text-on-surface text-xs font-semibold flex items-center justify-center gap-3 transition-colors border border-outline-variant/30 cursor-pointer disabled:opacity-50"
+                    type="button" disabled="@isBusy">
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17Z" fill="#4285F4"></path>
                     <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24Z" fill="#34A853"></path>
@@ -129,8 +149,64 @@
     private bool rememberMe = false;
     private bool showPassword = false;
 
+    private bool isBusy = false;
+    private string? errorMessage = null;
+
     private void TogglePassword()
     {
         showPassword = !showPassword;
+    }
+
+    private async Task LoginAsync()
+    {
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "יש למלא שם משתמש וסיסמה.";
+            return;
+        }
+
+        isBusy = true;
+        try
+        {
+            // שולחים לבקר את השם והסיסמה
+            var credentials = new { Username = identifier.Trim(), Password = password };
+            HttpResponseMessage response = await Http.PostAsJsonAsync("api/users/login", credentials);
+
+            // 401: השם או הסיסמה שגויים
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                errorMessage = "שם המשתמש או הסיסמה שגויים.";
+                return;
+            }
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = "הכניסה נכשלה. נסו שוב.";
+                return;
+            }
+
+            // הבקר החזיר את המשתמש עם התפקיד שלו
+            User? user = await response.Content.ReadFromJsonAsync<User>();
+            if (user == null)
+            {
+                errorMessage = "הכניסה נכשלה. נסו שוב.";
+                return;
+            }
+
+            // שומרים בשירות. מכאן כל הדפים יודעים מי מחובר
+            Session.Login(user);
+        }
+        catch (HttpRequestException)
+        {
+            errorMessage = "השרת לא זמין כרגע. נסו שוב בעוד רגע.";
+            return;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+
+        Navigation.NavigateTo("");
     }
 }

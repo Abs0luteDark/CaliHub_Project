@@ -50,10 +50,15 @@
     </script>
 
     <link rel="stylesheet" href="css/site.css" />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="pageRenderMode" />
 </head>
 <body class="bg-background font-body-md text-on-surface antialiased">
-    <Routes />
+    <Routes @rendermode="pageRenderMode" />
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>
+
+@code {
+    private static readonly IComponentRenderMode pageRenderMode =
+        new InteractiveServerRenderMode(prerender: false);
+}

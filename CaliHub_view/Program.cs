@@ -7,6 +7,8 @@ string apiBaseUrl = builder.Configuration["ApiBaseUrl"]
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7030/") });
 
+builder.Services.AddScoped<CaliHub_view.Services.UserSession>();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
