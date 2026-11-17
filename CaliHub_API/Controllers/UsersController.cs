@@ -23,6 +23,10 @@ namespace CaliHub_API.Controllers
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _userDb.GetAllUsersAsync();
+            foreach (var u in users)
+            {
+                u.PasswordHash = string.Empty; // מרוקנים את הגיבוב לפני השליחה
+            }
             return Ok(users); // 200 OK
         }
 
@@ -35,6 +39,8 @@ namespace CaliHub_API.Controllers
             {
                 return NotFound(new { message = $"User with ID {id} not found." }); // 404 Not Found
             }
+
+            user.PasswordHash = string.Empty; // מרוקנים את הגיבוב לפני השליחה[cite: 20]
             return Ok(user); // 200 OK
         }
 
@@ -55,6 +61,8 @@ namespace CaliHub_API.Controllers
             {
                 return Unauthorized(new { message = "Invalid username or password." }); // 401 Unauthorized
             }
+
+            user.PasswordHash = string.Empty; // מרוקנים את הגיבוב לפני השליחה[cite: 20]
             return Ok(user); // 200 OK
         }
 
@@ -74,6 +82,7 @@ namespace CaliHub_API.Controllers
 
             int newId = await _userDb.AddUserAsync(user);
             user.Id = newId;
+            user.PasswordHash = string.Empty; // מרוקנים את הסיסמה/גיבוב לפני השליחה[cite: 20]
 
             return CreatedAtAction(nameof(GetUserById), new { id = newId }, user); // 201 Created
         }
@@ -157,7 +166,7 @@ namespace CaliHub_API.Controllers
         }
     }
 
-    // מודל עזר קטן עבור בקשת להתחברות
+    // מודל עזר קטן עבור בקשת התחברות
     public class LoginRequest
     {
         public string Username { get; set; } = string.Empty;

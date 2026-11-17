@@ -207,6 +207,7 @@
             isBusy = false;
         }
 
-        Navigation.NavigateTo("");
+        // שונה מדף הבית ("") אל "/feed" כדי להעביר כל משתמש מחובר ישר לפיד הקהילה והמדיה
+        Navigation.NavigateTo("/feed");
     }
 }

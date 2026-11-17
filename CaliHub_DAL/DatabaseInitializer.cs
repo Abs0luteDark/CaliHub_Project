@@ -14,7 +14,7 @@ namespace CaliHub_DAL
 
             await CreateTablesAsync(connectionStringWithDb);
             await SeedRolesAsync(connectionStringWithDb);
-            await SeedUsersAsync(connectionStringWithDb); // הוספנו אתחול משתמשים
+            await SeedUsersAsync(connectionStringWithDb);
         }
 
         private static async Task CreateDatabaseAsync(string connectionString)
@@ -87,25 +87,42 @@ namespace CaliHub_DAL
             using var checkCommand = new MySqlCommand(checkQuery, connection);
             long count = Convert.ToInt64(await checkCommand.ExecuteScalarAsync());
 
-            // אם הטבלה ריקה, נכניס 10 משתמשי בדיקה (1 מנהל, 2 מאמנים, 7 מתאמנים)
+            // אם הטבלה ריקה, נכניס 10 משתמשי בדיקה עם סיסמה מגובבת (123456)
             if (count == 0)
             {
-                string insertQuery = @"
-                    INSERT INTO Users (Username, Email, PasswordHash, RoleId, IsActive) VALUES 
-                    ('admin', 'admin@calihub.com', '123456', 3, TRUE),
-                    ('trainer_dan', 'dan@calihub.com', '123456', 2, TRUE),
-                    ('trainer_alex', 'alex@calihub.com', '123456', 2, TRUE),
-                    ('user_ron', 'ron@calihub.com', '123456', 1, TRUE),
-                    ('user_noam', 'noam@calihub.com', '123456', 1, TRUE),
-                    ('user_maya', 'maya@calihub.com', '123456', 1, TRUE),
-                    ('user_tom', 'tom@calihub.com', '123456', 1, TRUE),
-                    ('user_gal', 'gal@calihub.com', '123456', 1, TRUE),
-                    ('user_eli', 'eli@calihub.com', '123456', 1, TRUE),
-                    ('user_or', 'or@calihub.com', '123456', 1, FALSE);"; // משתמש אחד לא פעיל לצורכי בדיקה
-
-                using var insertCommand = new MySqlCommand(insertQuery, connection);
-                await insertCommand.ExecuteNonQueryAsync();
+                await InsertSeedUserAsync(connection, "admin", "admin@calihub.com", "123456", "SuperAdmin", true);
+                await InsertSeedUserAsync(connection, "trainer_dan", "dan@calihub.com", "123456", "Trainer", true);
+                await InsertSeedUserAsync(connection, "trainer_alex", "alex@calihub.com", "123456", "Trainer", true);
+                await InsertSeedUserAsync(connection, "user_ron", "ron@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_noam", "noam@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_maya", "maya@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_tom", "tom@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_gal", "gal@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_eli", "eli@calihub.com", "123456", "Trainee", true);
+                await InsertSeedUserAsync(connection, "user_or", "or@calihub.com", "123456", "Trainee", false);
             }
+        }
+
+        private static async Task InsertSeedUserAsync(
+            MySqlConnection connection,
+            string username,
+            string email,
+            string plainPassword,
+            string roleName,
+            bool isActive)
+        {
+            string query = @"
+                INSERT INTO Users (Username, Email, PasswordHash, RoleId, IsActive)
+                VALUES (@username, @email, @passwordHash, (SELECT Id FROM Roles WHERE RoleName = @roleName), @isActive);";
+
+            using var cmd = new MySqlCommand(query, connection);
+            cmd.Parameters.AddWithValue("@username", username);
+            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@passwordHash", BCrypt.Net.BCrypt.HashPassword(plainPassword));
+            cmd.Parameters.AddWithValue("@roleName", roleName);
+            cmd.Parameters.AddWithValue("@isActive", isActive);
+
+            await cmd.ExecuteNonQueryAsync();
         }
     }
 }

@@ -50,7 +50,7 @@ namespace CaliHub_DAL
             using var cmd = new MySqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@username", user.Username);
             cmd.Parameters.AddWithValue("@email", user.Email);
-            cmd.Parameters.AddWithValue("@password_hash", user.PasswordHash);
+            cmd.Parameters.AddWithValue("@password_hash", BCrypt.Net.BCrypt.HashPassword(user.PasswordHash));
             cmd.Parameters.AddWithValue("@role_id", user.RoleId);
             cmd.Parameters.AddWithValue("@is_active", user.IsActive);
 
@@ -101,7 +101,7 @@ namespace CaliHub_DAL
             if (await reader.ReadAsync())
             {
                 var user = ReadUser(reader);
-                if (user.PasswordHash == password)
+                if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                 {
                     return user;
                 }
@@ -189,14 +189,14 @@ namespace CaliHub_DAL
             return rowsAffected > 0;
         }
 
-        public async Task<bool> UpdatePasswordAsync(int userId, string newPasswordHash)
+        public async Task<bool> UpdatePasswordAsync(int userId, string newPassword)
         {
             using var conn = new MySqlConnection(_connectionString);
             await conn.OpenAsync();
 
             string query = "UPDATE Users SET PasswordHash = @password_hash WHERE Id = @id;";
             using var cmd = new MySqlCommand(query, conn);
-            cmd.Parameters.AddWithValue("@password_hash", newPasswordHash);
+            cmd.Parameters.AddWithValue("@password_hash", BCrypt.Net.BCrypt.HashPassword(newPassword));
             cmd.Parameters.AddWithValue("@id", userId);
 
             int rowsAffected = await cmd.ExecuteNonQueryAsync();

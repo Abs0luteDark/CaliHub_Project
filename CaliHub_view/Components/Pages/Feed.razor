@@ -1,0 +1,152 @@
+﻿@page "/feed"
+@using CaliHub_view.Services
+@inject UserSession Session
+@inject NavigationManager Nav
+
+@* הצגת תוכן הפיד רק לאחר אימות שהמשתמש מחובר למערכת *@
+@if (isAuthorized)
+{
+    <div dir="rtl" class="min-h-screen bg-[#0D0D0F] text-white px-4 md:px-8 py-6">
+        <div class="max-w-7xl mx-auto flex flex-col gap-6">
+
+            @* סרגל עליון של הפיד: שורת חיפוש וכפתור העלאת מדיה *@
+            <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                        search
+                    </span>
+                    <input type="text"
+                           @bind="searchQuery"
+                           @bind:event="oninput"
+                           placeholder="חיפוש תרגילים, סרטונים, פארקים או מתאמנים..."
+                           class="w-full bg-[#16161A] border border-white/10 rounded-full py-3 pr-12 pl-4 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-[#FF8C00] transition-colors" />
+                </div>
+
+                <button type="button"
+                        class="inline-flex items-center justify-center gap-2 bg-[#FF8C00] hover:bg-[#e07b00] text-black font-bold text-sm px-6 py-3 rounded-full shadow-lg shadow-[#FF8C00]/20 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                    <span>העלאת מדיה</span>
+                </button>
+            </div>
+
+            @* שורת תגיות סינון קטגוריות *@
+            <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                @foreach (string category in categories)
+                {
+                    if (selectedCategory == category)
+                    {
+                        <button type="button"
+                                @onclick="() => SelectCategory(category)"
+                                class="px-4 py-2 rounded-full text-xs font-bold bg-[#FF8C00] text-black whitespace-nowrap transition-all cursor-pointer">
+                            @category
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                @onclick="() => SelectCategory(category)"
+                                class="px-4 py-2 rounded-full text-xs font-medium bg-[#16161A] text-gray-300 border border-white/10 hover:border-[#FF8C00]/50 whitespace-nowrap transition-all cursor-pointer">
+                            @category
+                        </button>
+                    }
+                }
+            </div>
+
+            @* אזור התוכן המרכזי בסגנון פינטרסט - מוכן לטעינה ממסד הנתונים *@
+            @if (posts.Count == 0)
+            {
+                <div class="mt-8 rounded-2xl bg-[#16161A] border border-white/10 p-12 text-center flex flex-col items-center justify-center gap-3">
+                    <span class="material-symbols-outlined text-5xl text-[#FF8C00]">photo_library</span>
+                    <h2 class="text-xl font-bold text-white">פיד הקהילה והמדיה מוכן לפעולה</h2>
+                    <p class="text-sm text-gray-400 max-w-md">
+                        עדיין לא הועלו תמונות או סרטונים. ברגע שנחבר את טבלת הפוסטים ממסד הנתונים, התוכן של הקהילה יופיע כאן בגריד מדורג.
+                    </p>
+                </div>
+            }
+            else
+            {
+                @* גריד מדורג בסגנון פינטרסט (Masonry) עבור פוסטים עתידיים מהמסד *@
+                <div class="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                    @foreach (FeedPostItem post in posts)
+                    {
+                        <div class="break-inside-avoid rounded-2xl bg-[#16161A] border border-white/10 overflow-hidden hover:border-[#FF8C00]/50 transition-all">
+                            <div class="relative">
+                                <img src="@post.MediaUrl" alt="@post.Title" class="w-full h-auto object-cover" />
+                                @if (post.IsVideo)
+                                {
+                                    <span class="absolute bottom-2 right-2 bg-black/75 text-white text-xs px-2 py-1 rounded-md">
+                                        @post.Duration
+                                    </span>
+                                }
+                            </div>
+                            <div class="p-4 flex flex-col gap-2">
+                                <span class="self-start text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FF8C00]/15 text-[#FF8C00]">
+                                    @post.SkillTag
+                                </span>
+                                <h3 class="text-sm font-bold text-white leading-snug">@post.Title</h3>
+                                <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs text-gray-400">
+                                    <span>@post.AuthorUsername</span>
+                                    <span>@post.LikesCount לייקים</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    // משתנה לבדיקה האם המשתמש מחובר ומורשה לצפות בדף
+    private bool isAuthorized = false;
+
+    // משתנים לסינון וחיפוש בפיד
+    private string searchQuery = string.Empty;
+    private string selectedCategory = "הכל";
+
+    // רשימת קטגוריות הסינון בראש הפיד
+    private List<string> categories = new List<string>
+    {
+        "הכל",
+        "סרטוני אימון",
+        "פריסטייל",
+        "סטטיק וכוח",
+        "שיאי PR",
+        "פארקים",
+        "ניתוחי AI"
+    };
+
+    // רשימה ריקה שתתמלא בעתיד באובייקטים ממסד הנתונים
+    private List<FeedPostItem> posts = new List<FeedPostItem>();
+
+    // בדיקת התחברות בעת טעינת הדף: אורח מועבר להתחברות, כל משתמש מחובר נכנס לפיד
+    protected override void OnInitialized()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        isAuthorized = true;
+    }
+
+    // פעולה לעדכון הקטגוריה הנבחרת בסינון
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    // מחלקת עזר המייצגת פריט מדיה בפיד עד לחיבור למודל ולמסד הנתונים
+    private class FeedPostItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string MediaUrl { get; set; } = string.Empty;
+        public string SkillTag { get; set; } = string.Empty;
+        public string AuthorUsername { get; set; } = string.Empty;
+        public bool IsVideo { get; set; }
+        public string Duration { get; set; } = string.Empty;
+        public int LikesCount { get; set; }
+    }
+}
