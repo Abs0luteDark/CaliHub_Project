@@ -1,0 +1,462 @@
+﻿@page "/create-guide"
+@using CaliHub_view.Services
+@inject UserSession Session
+@inject NavigationManager Nav
+
+@* הצגת דף יצירת המדריך רק לאחר אימות שהמשתמש מחובר ובתפקיד מאמן *@
+@if (isAuthorized)
+{
+    <div dir="rtl" class="min-h-screen bg-[#0D0D0F] text-white px-4 md:px-8 py-8">
+        <div class="max-w-4xl mx-auto flex flex-col gap-6">
+
+            @* סרגל עליון: כותרת, מעבר לתצוגה מקדימה וכפתור חזרה לספרייה *@
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-semibold text-[#FF8C00]">אזור יצירת תוכן למאמנים (Trainer)</span>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white">יצירת מדריך דיגיטלי</h1>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    @* כפתור החלפה בין מצב עריכה למצב תצוגה מקדימה של Long Strip *@
+                    @if (isPreviewMode)
+                    {
+                        <button type="button"
+                                @onclick="TogglePreviewMode"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FF8C00] text-black font-bold text-xs shadow-lg shadow-[#FF8C00]/20 transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                            <span>חזרה לעריכה</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                @onclick="TogglePreviewMode"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16161A] border border-[#FF8C00]/40 text-[#FF8C00] hover:bg-[#FF8C00]/10 font-bold text-xs transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-[18px]">visibility</span>
+                            <span>תצוגה מקדימה (Long Strip)</span>
+                        </button>
+                    }
+
+                    <a href="/guides" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#16161A] border border-white/10 hover:border-white/30 text-xs font-semibold text-gray-300 hover:text-white transition-all">
+                        <span>חזרה לספרייה</span>
+                        <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+
+            @* הודעת מערכת (שגיאה או אישור שמירה) *@
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                if (isError)
+                {
+                    <div class="p-4 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-sm flex items-center justify-between">
+                        <span>@statusMessage</span>
+                        <button type="button" @onclick="ClearStatus" class="text-xs underline cursor-pointer">סגור</button>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-sm flex items-center justify-between">
+                        <span>@statusMessage</span>
+                        <button type="button" @onclick="ClearStatus" class="text-xs underline cursor-pointer">סגור</button>
+                    </div>
+                }
+            }
+
+            @if (!isPreviewMode)
+            {
+                @* ================= מצב עריכה ================= *@
+
+                @* חלק 1: פרטי הכריכה של הספר הדיגיטלי *@
+                <div class="rounded-2xl bg-[#16161A] border border-white/10 p-6 flex flex-col gap-5">
+                    <div class="flex items-center gap-2 text-[#FF8C00] font-bold text-base border-b border-white/5 pb-3">
+                        <span class="material-symbols-outlined">auto_stories</span>
+                        <h2>פרטי הכריכה של המדריך</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5 md:col-span-2">
+                            <label class="text-xs font-semibold text-gray-300">כותרת המדריך / התרגיל</label>
+                            <input type="text"
+                                   @bind="guideTitle"
+                                   placeholder="לדוגמה: המדריך המלא לעליית כוח (Muscle-Up) נקייה"
+                                   class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]" />
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold text-gray-300">קטגוריה</label>
+                            <select @bind="selectedCategory"
+                                    class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF8C00]">
+                                @foreach (string category in categories)
+                                {
+                                    <option value="@category">@category</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold text-gray-300">רמת קושי</label>
+                            <select @bind="difficultyLevel"
+                                    class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#FF8C00]">
+                                <option value="מתחילים">מתחילים</option>
+                                <option value="בינוניים">בינוניים</option>
+                                <option value="מתקדמים">מתקדמים</option>
+                            </select>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5 md:col-span-2">
+                            <label class="text-xs font-semibold text-gray-300">תקציר קצר לכרטיסייה בספרייה</label>
+                            <textarea rows="2"
+                                      @bind="guideSummary"
+                                      placeholder="תיאור קצר של מה שהמתאמן ילמד במדריך..."
+                                      class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                @* חלק 2: רשימת הדפים הדינמית בפורמט הקבוע (כותרת -> טקסט -> מדיה -> דגשים) *@
+                <div class="flex flex-col gap-5">
+                    @for (int i = 0; i < pages.Count; i++)
+                    {
+                        int currentIndex = i;
+                        GuidePageDraft pageItem = pages[currentIndex];
+
+                        <div class="rounded-2xl bg-[#16161A] border border-white/10 p-6 flex flex-col gap-4 relative">
+                            @* סרגל ניהול דף: מספר דף, הזזה למעלה/למטה ומחיקה *@
+                            <div class="flex items-center justify-between border-b border-white/5 pb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-lg bg-[#FF8C00]/15 text-[#FF8C00] font-bold text-xs flex items-center justify-center">
+                                        @(currentIndex + 1)
+                                    </span>
+                                    <span class="font-bold text-sm text-white">דף @(currentIndex + 1) במדריך</span>
+                                </div>
+
+                                <div class="flex items-center gap-1.5">
+                                    @if (currentIndex > 0)
+                                    {
+                                        <button type="button"
+                                                @onclick="() => MovePageUp(currentIndex)"
+                                                title="הזז דף למעלה"
+                                                class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 cursor-pointer">
+                                            <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+                                        </button>
+                                    }
+
+                                    @if (currentIndex < pages.Count - 1)
+                                    {
+                                        <button type="button"
+                                                @onclick="() => MovePageDown(currentIndex)"
+                                                title="הזז דף למטה"
+                                                class="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 cursor-pointer">
+                                            <span class="material-symbols-outlined text-[18px]">arrow_downward</span>
+                                        </button>
+                                    }
+
+                                    @if (pages.Count > 1)
+                                    {
+                                        <button type="button"
+                                                @onclick="() => RemovePage(currentIndex)"
+                                                title="מחק דף"
+                                                class="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 cursor-pointer">
+                                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            @* 1. כותרת לדף *@
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-gray-300">1. כותרת הדף / השלב</label>
+                                <input type="text"
+                                       @bind="pageItem.Title"
+                                       placeholder="לדוגמה: שלב 1 - אחיזת False Grip וחימום מפרקים"
+                                       class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]" />
+                            </div>
+
+                            @* 2. טקסט עליון - הסבר הביצוע *@
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-gray-300">2. הסבר הביצוע (טקסט עליון)</label>
+                                <textarea rows="3"
+                                          @bind="pageItem.TopText"
+                                          placeholder="הסבר מפורט כיצד לבצע את התנועה בשלב הזה..."
+                                          class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]"></textarea>
+                            </div>
+
+                            @* 3. תמונה או סרטון *@
+                            <div class="flex flex-col gap-2 p-4 rounded-xl bg-[#0D0D0F] border border-white/5">
+                                <label class="text-xs font-semibold text-gray-300">3. מדיה להדגמה (תמונה או סרטון)</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <select @bind="pageItem.MediaType"
+                                            class="bg-[#16161A] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-[#FF8C00]">
+                                        <option value="image">תמונה</option>
+                                        <option value="video">סרטון הדגמה</option>
+                                    </select>
+
+                                    <input type="text"
+                                           dir="ltr"
+                                           @bind="pageItem.MediaUrl"
+                                           placeholder="הדבק קישור לתמונה או סרטון (URL)..."
+                                           class="sm:col-span-2 bg-[#16161A] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]" />
+                                </div>
+                            </div>
+
+                            @* 4. טקסט תחתון - דגשים וטעויות נפוצות *@
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-xs font-semibold text-[#FF8C00]">4. דגשים וטעויות נפוצות (תיבת הדגשה תחתונה)</label>
+                                <textarea rows="2"
+                                          @bind="pageItem.BottomTipText"
+                                          placeholder="לדוגמה: שים לב לא לפתוח מרפקים לצדדים ולשמור על ליבה מכווצת..."
+                                          class="w-full bg-[#0D0D0F] border border-[#FF8C00]/25 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]"></textarea>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* כפתורי פעולה בתחתית העורך: הוספת דף הבא ופרסום המדריך *@
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-2">
+                    <button type="button"
+                            @onclick="AddNewPage"
+                            class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#16161A] border border-dashed border-[#FF8C00]/50 hover:bg-[#FF8C00]/10 text-[#FF8C00] font-bold text-sm transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">add_circle</span>
+                        <span>הוסף דף הבא ל-Long Strip</span>
+                    </button>
+
+                    <button type="button"
+                            @onclick="SaveGuideDraft"
+                            class="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-[#FF8C00] hover:bg-[#e07b00] text-black font-bold text-sm shadow-lg shadow-[#FF8C00]/20 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-[20px]">publish</span>
+                        <span>פרסום המדריך (@pages.Count דפים)</span>
+                    </button>
+                </div>
+            }
+            else
+            {
+                @* ================= מצב תצוגה מקדימה (Long Strip רציף בסגנון מנגה) ================= *@
+                <div class="max-w-2xl mx-auto w-full rounded-2xl bg-[#16161A] border border-white/10 overflow-hidden shadow-2xl">
+                    @* כריכת הספר בראש הגלילה *@
+                    <div class="p-8 bg-gradient-to-b from-[#FF8C00]/15 to-[#16161A] border-b border-white/10 flex flex-col gap-3 text-right">
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-[#FF8C00] text-black">@difficultyLevel</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-gray-200">@selectedCategory</span>
+                        </div>
+
+                        @if (string.IsNullOrWhiteSpace(guideTitle))
+                        {
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-500">כותרת המדריך תופיע כאן...</h2>
+                        }
+                        else
+                        {
+                            <h2 class="text-2xl md:text-3xl font-bold text-white">@guideTitle</h2>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(guideSummary))
+                        {
+                            <p class="text-sm text-gray-300 leading-relaxed">@guideSummary</p>
+                        }
+
+                        <div class="text-xs text-gray-400 pt-2">
+                            מאת המאמן: <span class="text-[#FF8C00] font-bold">@Session.Username</span> • @pages.Count דפים ברצף
+                        </div>
+                    </div>
+
+                    @* רצף הדפים ללא הפסקות (Long Strip) *@
+                    <div class="flex flex-col divide-y divide-white/5">
+                        @for (int i = 0; i < pages.Count; i++)
+                        {
+                            GuidePageDraft pageItem = pages[i];
+
+                            <div class="p-6 md:p-8 flex flex-col gap-5">
+                                @* 1. כותרת הדף *@
+                                <div class="flex items-center gap-2.5">
+                                    <span class="px-2.5 py-1 rounded-md bg-[#FF8C00]/20 text-[#FF8C00] font-bold text-xs">
+                                        דף @(i + 1)
+                                    </span>
+                                    @if (string.IsNullOrWhiteSpace(pageItem.Title))
+                                    {
+                                        <h3 class="text-xl font-bold text-gray-500">כותרת שלב @(i + 1)</h3>
+                                    }
+                                    else
+                                    {
+                                        <h3 class="text-xl font-bold text-white">@pageItem.Title</h3>
+                                    }
+                                </div>
+
+                                @* 2. טקסט הסבר הביצוע *@
+                                @if (!string.IsNullOrWhiteSpace(pageItem.TopText))
+                                {
+                                    <p class="text-sm md:text-base text-gray-200 leading-relaxed whitespace-pre-line">
+                                        @pageItem.TopText
+                                    </p>
+                                }
+
+                                @* 3. מדיה (תמונה או סרטון) *@
+                                <div class="w-full rounded-xl overflow-hidden bg-[#0D0D0F] border border-white/10">
+                                    @if (string.IsNullOrWhiteSpace(pageItem.MediaUrl))
+                                    {
+                                        <div class="h-56 flex flex-col items-center justify-center text-gray-500 gap-2">
+                                            <span class="material-symbols-outlined text-4xl">
+                                                @(pageItem.MediaType == "video" ? "smart_display" : "image")
+                                            </span>
+                                            <span class="text-xs">אזור תצוגת @(pageItem.MediaType == "video" ? "סרטון ההדגמה" : "התמונה")</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        if (pageItem.MediaType == "video")
+                                        {
+                                            <video src="@pageItem.MediaUrl" controls class="w-full max-h-[450px] bg-black"></video>
+                                        }
+                                        else
+                                        {
+                                            <img src="@pageItem.MediaUrl" alt="@pageItem.Title" class="w-full h-auto object-cover" />
+                                        }
+                                    }
+                                </div>
+
+                                @* 4. תיבת דגשים וטעויות נפוצות *@
+                                @if (!string.IsNullOrWhiteSpace(pageItem.BottomTipText))
+                                {
+                                    <div class="p-4 rounded-xl bg-[#FF8C00]/10 border-r-4 border-[#FF8C00] flex flex-col gap-1">
+                                        <span class="text-xs font-bold text-[#FF8C00] flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[16px]">tips_and_updates</span>
+                                            <span>דגשים וטעויות נפוצות</span>
+                                        </span>
+                                        <p class="text-sm text-gray-200 leading-relaxed whitespace-pre-line">
+                                            @pageItem.BottomTipText
+                                        </p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+}
+
+@code {
+    // משתנה המציין האם המשתמש מורשה לצפות בדף
+    private bool isAuthorized = false;
+
+    // משתנה לבקרת מעבר בין מצב עריכה למצב תצוגה מקדימה רציפה
+    private bool isPreviewMode = false;
+
+    // משתנים לפרטי הכריכה של המדריך
+    private string guideTitle = string.Empty;
+    private string selectedCategory = "תרגילי כוח";
+    private string difficultyLevel = "מתחילים";
+    private string guideSummary = string.Empty;
+
+    // רשימת הקטגוריות הזמינות לבחירה
+    private List<string> categories = new List<string>
+    {
+        "תרגילי כוח",
+        "סטטיקה ושליטה",
+        "פריסטייל",
+        "ניידות ומניעת פציעות",
+        "בסיס"
+    };
+
+    // רשימת הדפים הדינמית של המדריך (מתחילה עם דף ראשון מוכן)
+    private List<GuidePageDraft> pages = new List<GuidePageDraft>
+    {
+        new GuidePageDraft()
+    };
+
+    // משתנים להצגת הודעות משוב למאמן
+    private string statusMessage = string.Empty;
+    private bool isError = false;
+
+    // בדיקת התחברות והרשאת מאמן בעת טעינת הדף
+    protected override void OnInitialized()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (Session.RoleName != "Trainer")
+        {
+            Nav.NavigateTo("/no-permission");
+            return;
+        }
+
+        isAuthorized = true;
+    }
+
+    // פעולה להחלפה בין מצב עריכה למצב תצוגה מקדימה
+    private void TogglePreviewMode()
+    {
+        isPreviewMode = !isPreviewMode;
+    }
+
+    // פעולה להוספת דף חדש בסוף הרצף
+    private void AddNewPage()
+    {
+        pages.Add(new GuidePageDraft());
+    }
+
+    // פעולה למחיקת דף לפי מיקומו ברשימה
+    private void RemovePage(int index)
+    {
+        if (pages.Count > 1 && index >= 0 && index < pages.Count)
+        {
+            pages.RemoveAt(index);
+        }
+    }
+
+    // פעולה להזזת דף שלב אחד למעלה
+    private void MovePageUp(int index)
+    {
+        if (index > 0 && index < pages.Count)
+        {
+            GuidePageDraft temp = pages[index];
+            pages[index] = pages[index - 1];
+            pages[index - 1] = temp;
+        }
+    }
+
+    // פעולה להזזת דף שלב אחד למטה
+    private void MovePageDown(int index)
+    {
+        if (index >= 0 && index < pages.Count - 1)
+        {
+            GuidePageDraft temp = pages[index];
+            pages[index] = pages[index + 1];
+            pages[index + 1] = temp;
+        }
+    }
+
+    // פעולה לבדיקת תקינות המדריך והכנתו לשמירה במסד הנתונים
+    private void SaveGuideDraft()
+    {
+        if (string.IsNullOrWhiteSpace(guideTitle))
+        {
+            isError = true;
+            statusMessage = "יש להזין כותרת ראשית למדריך לפני הפרסום.";
+            return;
+        }
+
+        isError = false;
+        statusMessage = "המדריך \"" + guideTitle + "\" (" + pages.Count + " דפים) נבדק בהצלחה ומוכן לשמירה ברגע שנחבר את טבלת המדריכים למסד הנתונים!";
+    }
+
+    // פעולה לניקוי הודעת המערכת
+    private void ClearStatus()
+    {
+        statusMessage = string.Empty;
+    }
+
+    // מחלקת עזר המייצגת דף בודד במדריך בפורמט: כותרת -> טקסט -> מדיה -> דגשים
+    private class GuidePageDraft
+    {
+        public string Title { get; set; } = string.Empty;
+        public string TopText { get; set; } = string.Empty;
+        public string MediaType { get; set; } = "image";
+        public string MediaUrl { get; set; } = string.Empty;
+        public string BottomTipText { get; set; } = string.Empty;
+    }
+}

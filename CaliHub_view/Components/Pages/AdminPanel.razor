@@ -1,0 +1,275 @@
+﻿@page "/admin"
+@using CaliHub_view.Services
+@inject UserSession Session
+@inject NavigationManager Nav
+
+@* הצגת דף הניהול רק לאחר אימות שהמשתמש מחובר ובתפקיד מנהל מערכת *@
+@if (isAuthorized)
+{
+    <div dir="rtl" class="min-h-screen bg-[#0D0D0F] text-white px-4 md:px-8 py-8">
+        <div class="max-w-6xl mx-auto flex flex-col gap-6">
+
+            @* כותרת הדף ותגית הרשאת מנהל *@
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+                <div class="flex flex-col gap-1.5">
+                    <div class="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full bg-[#FF8C00]/15 border border-[#FF8C00]/30 text-[#FF8C00] text-xs font-bold">
+                        <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                        <span>הרשאת SuperAdmin</span>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white">ניהול משתמשים במערכת</h1>
+                    <p class="text-xs sm:text-sm text-gray-400">
+                        שלום @Session.Username — כרגע מוצגים נתוני דמה לבדיקה, ובגרסה 10 הטבלה תתחבר למסד הנתונים.
+                    </p>
+                </div>
+
+                <a href="/feed" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16161A] border border-white/10 hover:border-[#FF8C00]/50 text-xs font-semibold text-gray-300 hover:text-white transition-all self-start sm:self-auto">
+                    <span>חזרה לפיד</span>
+                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                </a>
+            </div>
+
+            @* הודעת משוב על פעולה שבוצעה בטבלה *@
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="p-3.5 rounded-xl bg-[#FF8C00]/15 border border-[#FF8C00]/40 text-xs sm:text-sm text-white flex items-center justify-between">
+                    <span>@statusMessage</span>
+                    <button type="button" @onclick="ClearStatus" class="text-[#FF8C00] font-bold underline cursor-pointer">סגור</button>
+                </div>
+            }
+
+            @* סרגל חיפוש וסיכום כמות משתמשים *@
+            <div class="rounded-2xl bg-[#16161A] border border-white/10 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="relative w-full sm:w-80">
+                    <span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-[18px]">
+                        search
+                    </span>
+                    <input type="text"
+                           @bind="searchQuery"
+                           @bind:event="oninput"
+                           placeholder="חיפוש לפי שם משתמש, אימייל או תפקיד..."
+                           class="w-full bg-[#0D0D0F] border border-white/10 rounded-xl py-2.5 pr-10 pl-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#FF8C00]" />
+                </div>
+
+                <div class="text-xs text-gray-400">
+                    סה"כ משתמשים ברשימה: <span class="text-white font-bold">@GetFilteredUsers().Count</span>
+                </div>
+            </div>
+
+            @* טבלת המשתמשים *@
+            <div class="rounded-2xl bg-[#16161A] border border-white/10 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-white/5 border-b border-white/10 text-xs text-gray-400">
+                                <th class="py-3.5 px-4 font-semibold">#</th>
+                                <th class="py-3.5 px-4 font-semibold">שם משתמש</th>
+                                <th class="py-3.5 px-4 font-semibold">אימייל</th>
+                                <th class="py-3.5 px-4 font-semibold">תפקיד</th>
+                                <th class="py-3.5 px-4 font-semibold">סטטוס</th>
+                                <th class="py-3.5 px-4 font-semibold text-center">פעולות ניהול</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 text-sm">
+                            @foreach (DummyUser user in GetFilteredUsers())
+                            {
+                                <tr class="hover:bg-white/[0.02] transition-colors">
+                                    <td class="py-3.5 px-4 text-gray-400 text-xs">@user.Id</td>
+                                    <td class="py-3.5 px-4 font-bold text-white">@user.Username</td>
+                                    <td class="py-3.5 px-4 text-gray-300 text-xs" dir="ltr">@user.Email</td>
+                                    <td class="py-3.5 px-4">
+                                        @if (user.RoleName == "SuperAdmin")
+                                        {
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-500/20 text-red-400">
+                                                SuperAdmin
+                                            </span>
+                                        }
+                                        else if (user.RoleName == "Trainer")
+                                        {
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FF8C00]/20 text-[#FF8C00]">
+                                                Trainer (מאמן)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-gray-300">
+                                                Trainee (מתאמן)
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        @if (user.IsActive)
+                                        {
+                                            <span class="inline-flex items-center gap-1 text-xs text-emerald-400 font-semibold">
+                                                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                                                <span>פעיל</span>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center gap-1 text-xs text-red-400 font-semibold">
+                                                <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                                                <span>חסום</span>
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        @if (user.RoleName == "SuperAdmin")
+                                        {
+                                            <div class="text-center text-xs text-gray-500">מנהל ראשי</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="flex items-center justify-center gap-2">
+                                                <button type="button"
+                                                        @onclick="() => ToggleRole(user)"
+                                                        class="px-3 py-1.5 rounded-lg bg-[#FF8C00]/15 hover:bg-[#FF8C00] text-[#FF8C00] hover:text-black text-xs font-bold transition-all cursor-pointer">
+                                                    החלף תפקיד
+                                                </button>
+
+                                                <button type="button"
+                                                        @onclick="() => ToggleStatus(user)"
+                                                        class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-gray-300 text-xs font-semibold transition-all cursor-pointer">
+                                                    @if (user.IsActive)
+                                                    {
+                                                        <span>חסום</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>הפעל</span>
+                                                    }
+                                                </button>
+
+                                                <button type="button"
+                                                        @onclick="() => RemoveUser(user)"
+                                                        title="הסר מהרשימה"
+                                                        class="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all cursor-pointer">
+                                                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                                                </button>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    // משתנה לבדיקת הרשאת גישה לדף
+    private bool isAuthorized = false;
+
+    // משתנה לחיפוש בטבלה
+    private string searchQuery = string.Empty;
+
+    // הודעת משוב זמנית על פעולות בטבלה
+    private string statusMessage = string.Empty;
+
+    // רשימת משתמשי הדמה (תוחלף בנתונים אמיתיים ממסד הנתונים בגרסה 10)
+    private List<DummyUser> users = new List<DummyUser>();
+
+    // בדיקת התחברות והרשאת מנהל מערכת בעת טעינת הדף
+    protected override void OnInitialized()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        if (Session.RoleName != "SuperAdmin")
+        {
+            Nav.NavigateTo("/no-permission");
+            return;
+        }
+
+        isAuthorized = true;
+        LoadDummyUsers();
+    }
+
+    // פעולה לטעינת נתוני דמה של משתמשים לצורך הצגה ובדיקה
+    private void LoadDummyUsers()
+    {
+        users = new List<DummyUser>
+        {
+            new DummyUser { Id = 1, Username = "admin", Email = "admin@calihub.co.il", RoleName = "SuperAdmin", IsActive = true },
+            new DummyUser { Id = 2, Username = "trainer_dan", Email = "dan@calihub.co.il", RoleName = "Trainer", IsActive = true },
+            new DummyUser { Id = 3, Username = "user_ron", Email = "ron@calihub.co.il", RoleName = "Trainee", IsActive = true },
+            new DummyUser { Id = 4, Username = "noa_sw", Email = "noa@calihub.co.il", RoleName = "Trainer", IsActive = true },
+            new DummyUser { Id = 5, Username = "omer_cali", Email = "omer@calihub.co.il", RoleName = "Trainee", IsActive = false }
+        };
+    }
+
+    // פעולה להחזרת רשימת המשתמשים המסוננת לפי שורת החיפוש
+    private List<DummyUser> GetFilteredUsers()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            return users;
+        }
+
+        string query = searchQuery.Trim().ToLower();
+        List<DummyUser> filtered = new List<DummyUser>();
+
+        foreach (DummyUser user in users)
+        {
+            if (user.Username.ToLower().Contains(query) ||
+                user.Email.ToLower().Contains(query) ||
+                user.RoleName.ToLower().Contains(query))
+            {
+                filtered.Add(user);
+            }
+        }
+
+        return filtered;
+    }
+
+    // פעולה להחלפת תפקיד המשתמש בין מתאמן למאמן ברשימת הדמה
+    private void ToggleRole(DummyUser user)
+    {
+        if (user.RoleName == "Trainee")
+        {
+            user.RoleName = "Trainer";
+        }
+        else
+        {
+            user.RoleName = "Trainee";
+        }
+
+        statusMessage = "התפקיד של " + user.Username + " עודכן זמנית ל-" + user.RoleName + " (יישמר במסד הנתונים בגרסה 10).";
+    }
+
+    // פעולה לחסימה או הפעלה של משתמש ברשימת הדמה
+    private void ToggleStatus(DummyUser user)
+    {
+        user.IsActive = !user.IsActive;
+        statusMessage = "הסטטוס של " + user.Username + " עודכן.";
+    }
+
+    // פעולה להסרת משתמש מרשימת הדמה
+    private void RemoveUser(DummyUser user)
+    {
+        users.Remove(user);
+        statusMessage = "המשתמש " + user.Username + " הוסר מרשימת התצוגה.";
+    }
+
+    // פעולה לניקוי הודעת המשוב
+    private void ClearStatus()
+    {
+        statusMessage = string.Empty;
+    }
+
+    // מחלקת עזר המייצגת שורת משתמש בטבלת הניהול עד לחיבור למודל ולשרת
+    private class DummyUser
+    {
+        public int Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+    }
+}

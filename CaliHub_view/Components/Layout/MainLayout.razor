@@ -15,9 +15,10 @@
 
                 <!-- תפריט קישורים -->
                 <nav class="hidden lg:flex items-center gap-2">
-                    <a class="group relative flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+                    @* שונה מ-"#" ל-"/guides" כדי לפתוח את דף ספריית המדריכים והתרגילים בלחיצה *@
+                    <a class="group relative flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="/guides">
                         <span class="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">menu_book</span>
-                        <span class="font-semibold text-sm">תוכניות אימון</span>
+                        <span class="font-semibold text-sm">ספריית מדריכים</span>
                     </a>
                     <a class="group relative flex items-center gap-2 px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
                         <span class="material-symbols-outlined text-[20px] text-outline group-hover:text-primary transition-colors">location_on</span>
@@ -43,6 +44,15 @@
             <div class="flex items-center gap-3">
                 @if (Session.IsLoggedIn)
                 {
+                    @* כפתור גישה לפאנל הניהול - מוצג אך ורק למשתמש בתפקיד מנהל מערכת *@
+                    @if (Session.RoleName == "SuperAdmin")
+                    {
+                        <a href="/admin" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF8C00]/15 hover:bg-[#FF8C00] text-[#FF8C00] hover:text-black border border-[#FF8C00]/40 text-xs font-bold transition-all">
+                            <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                            <span>ניהול מערכת</span>
+                        </a>
+                    }
+
                     <span class="text-sm font-semibold text-on-surface flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-[20px] text-primary">account_circle</span>
                         <span>שלום, @Session.Username</span>

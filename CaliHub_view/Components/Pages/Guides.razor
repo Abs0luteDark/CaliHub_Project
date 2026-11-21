@@ -1,0 +1,213 @@
+﻿@page "/guides"
+@using CaliHub_view.Services
+@inject UserSession Session
+@inject NavigationManager Nav
+
+@* הצגת ספריית המדריכים רק לאחר אימות שהמשתמש מחובר למערכת *@
+@if (isAuthorized)
+{
+    <div dir="rtl" class="min-h-screen bg-[#0D0D0F] text-white px-4 md:px-8 py-8 relative">
+        <div class="max-w-7xl mx-auto flex flex-col gap-6">
+
+            @* כותרת ראשית ותיאור הספרייה בסגנון ספרי הדרכה מקצועיים *@
+            <div class="flex flex-col gap-2">
+                <div class="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full bg-[#FF8C00]/10 border border-[#FF8C00]/20 text-[#FF8C00] text-xs font-semibold">
+                    <span class="material-symbols-outlined text-[16px]">auto_stories</span>
+                    <span>ספריית הידע הדיגיטלית של CaliHub</span>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-white">
+                    ספריית מדריכים ותרגילים
+                </h1>
+                <p class="text-sm md:text-base text-gray-400 max-w-2xl">
+                    ספרי הדרכה דיגיטליים שנכתבו על ידי מאמני הקהילה — שילוב של פירוק ביומכני, שלבי התקדמות כתובים והדגמות וידאו לכל תרגיל.
+                </p>
+            </div>
+
+            @* שורת חיפוש נקייה *@
+            <div class="relative w-full">
+                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    search
+                </span>
+                <input type="text"
+                       @bind="searchQuery"
+                       @bind:event="oninput"
+                       placeholder="חיפוש תרגיל (Muscle-Up, Planche, Handstand), פרק או שם מאמן..."
+                       class="w-full bg-[#16161A] border border-white/10 rounded-full py-3.5 pr-12 pl-4 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-[#FF8C00] transition-colors" />
+            </div>
+
+            @* שורת תגיות סינון לפי רמת קושי וסוג אימון *@
+            <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                @foreach (string category in categories)
+                {
+                    if (selectedCategory == category)
+                    {
+                        <button type="button"
+                                @onclick="() => SelectCategory(category)"
+                                class="px-4 py-2 rounded-full text-xs font-bold bg-[#FF8C00] text-black whitespace-nowrap transition-all cursor-pointer">
+                            @category
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button"
+                                @onclick="() => SelectCategory(category)"
+                                class="px-4 py-2 rounded-full text-xs font-medium bg-[#16161A] text-gray-300 border border-white/10 hover:border-[#FF8C00]/50 whitespace-nowrap transition-all cursor-pointer">
+                            @category
+                        </button>
+                    }
+                }
+            </div>
+
+            @* אזור התוכן המרכזי - מוכן לטעינת ספרי הדרכה ממסד הנתונים *@
+            @if (guides.Count == 0)
+            {
+                <div class="mt-4 rounded-2xl bg-[#16161A] border border-white/10 p-12 text-center flex flex-col items-center justify-center gap-3">
+                    <span class="material-symbols-outlined text-5xl text-[#FF8C00]">menu_book</span>
+                    <h2 class="text-xl font-bold text-white">ספריית המדריכים הדיגיטליים מוכנה</h2>
+                    <p class="text-sm text-gray-400 max-w-md">
+                        עדיין לא פורסמו מדריכים במערכת. ברגע שנחבר את טבלת המדריכים ממסד הנתונים, כל מדריך יופיע כאן כספר דיגיטלי עם פרקי טקסט וסרטוני הדגמה.
+                    </p>
+                </div>
+            }
+            else
+            {
+                @* גריד אחיד של 3 עמודות עבור ספרי הדרכה דיגיטליים עתידיים מהמסד *@
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    @foreach (DigitalGuideItem guide in guides)
+                    {
+                        <div class="rounded-2xl bg-[#16161A] border border-white/10 overflow-hidden flex flex-col justify-between hover:border-[#FF8C00]/50 transition-all">
+                            <div>
+                                @* תמונת שער של הספר ותגיות פורמט ורמה *@
+                                <div class="relative h-48 w-full bg-black/40">
+                                    <img src="@guide.CoverImageUrl" alt="@guide.Title" class="w-full h-full object-cover" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-[#16161A] via-transparent to-black/40"></div>
+
+                                    <span class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-[#FF8C00] text-black">
+                                        @guide.DifficultyLevel
+                                    </span>
+
+                                    <span class="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-black/75 text-white border border-white/10">
+                                        <span class="material-symbols-outlined text-[14px] text-[#FF8C00]">auto_stories</span>
+                                        <span>ספר + וידאו</span>
+                                    </span>
+                                </div>
+
+                                @* פרטי הספר: פרקים, סרטונים, כותרת ותקציר מקצועי *@
+                                <div class="p-5 flex flex-col gap-3">
+                                    <div class="flex items-center gap-3 text-xs text-gray-400">
+                                        <span class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[15px] text-[#FF8C00]">article</span>
+                                            <span>@guide.ChaptersCount פרקים</span>
+                                        </span>
+                                        <span>•</span>
+                                        <span class="inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[15px] text-[#FF8C00]">smart_display</span>
+                                            <span>@guide.VideosCount סרטוני הדגמה</span>
+                                        </span>
+                                    </div>
+
+                                    <h3 class="text-lg font-bold text-white leading-snug">
+                                        @guide.Title
+                                    </h3>
+
+                                    <p class="text-xs text-gray-400 leading-relaxed line-clamp-2">
+                                        @guide.Summary
+                                    </p>
+                                </div>
+                            </div>
+
+                            @* פס תחתון: פרטי המאמן המחבר וכפתור פתיחת הספר *@
+                            <div class="px-5 py-4 border-t border-white/5 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-2xl text-gray-400">account_circle</span>
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold text-white">@guide.AuthorUsername</span>
+                                        <span class="text-[11px] text-[#FF8C00]">מאמן מוסמך</span>
+                                    </div>
+                                </div>
+
+                                <button type="button"
+                                        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-[#FF8C00] text-white hover:text-black text-xs font-bold transition-all cursor-pointer">
+                                    <span>פתיחת הספר</span>
+                                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* כפתור צף בפינת המסך ליצירת מדריך חדש - מוצג אך ורק למשתמש בתפקיד מאמן *@
+        @if (Session.RoleName == "Trainer")
+        {
+            <button type="button"
+                    @onclick="GoToCreateGuide"
+                    title="יצירת מדריך חדש"
+                    class="fixed bottom-6 left-6 z-40 inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#FF8C00] hover:bg-[#e07b00] text-black font-bold text-sm shadow-lg shadow-[#FF8C00]/30 hover:scale-105 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[20px]">add</span>
+                <span>יצירת מדריך</span>
+            </button>
+        }
+    </div>
+}
+
+@code {
+    // משתנה לבדיקה האם המשתמש מחובר ומורשה לצפות בדף
+    private bool isAuthorized = false;
+
+    // משתנים לסינון וחיפוש בספרייה
+    private string searchQuery = string.Empty;
+    private string selectedCategory = "הכל";
+
+    // רשימת קטגוריות הסינון בראש הספרייה
+    private List<string> categories = new List<string>
+    {
+        "הכל",
+        "מתחילים",
+        "בינוניים",
+        "מתקדמים",
+        "תרגילי כוח",
+        "סטטיקה ושליטה",
+        "ניידות ומניעת פציעות"
+    };
+
+    // רשימה ריקה שתתמלא בעתיד בספרי הדרכה ממסד הנתונים
+    private List<DigitalGuideItem> guides = new List<DigitalGuideItem>();
+
+    // בדיקת התחברות בעת טעינת הדף: אורח מועבר להתחברות, כל משתמש מחובר נכנס לספרייה
+    protected override void OnInitialized()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        isAuthorized = true;
+    }
+
+    // פעולה לעדכון קטגוריית הסינון הנבחרת
+    private void SelectCategory(string category)
+    {
+        selectedCategory = category;
+    }
+
+    // פעולה להעברת המאמן לדף יצירת מדריך חדש
+    private void GoToCreateGuide()
+    {
+        Nav.NavigateTo("/create-guide");
+    }
+
+    // מחלקת עזר המייצגת ספר הדרכה דיגיטלי משולב טקסט ווידאו עד לחיבור למודל ולמסד הנתונים
+    private class DigitalGuideItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string CoverImageUrl { get; set; } = string.Empty;
+        public string DifficultyLevel { get; set; } = string.Empty;
+        public string AuthorUsername { get; set; } = string.Empty;
+        public int ChaptersCount { get; set; }
+        public int VideosCount { get; set; }
+    }
+}
